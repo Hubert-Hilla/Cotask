@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import ListDetailView from "@/components/dashboard/lists/ListDetailView";
+import { Suspense } from "react";
 
 export default async function ListPage({
   params,
@@ -98,6 +99,7 @@ export default async function ListPage({
   };
 
   return (
+    <Suspense>
     <ListDetailView
       list={listData as any}
       userId={user.id}
@@ -105,5 +107,6 @@ export default async function ListPage({
       initialCompletedCount={completedTasks}
       initialTotalTasks={totalTasks}
     />
+    </Suspense>
   );
 }

@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import DashboardPage from "../../components/dashboard/DashBoard";
 import {redirect} from 'next/navigation';
+import { Suspense } from "react";
 
 // This would fetch data from your database
 export default async function Dashboard() {
@@ -73,6 +74,7 @@ export default async function Dashboard() {
   };
 
   return (
+    <Suspense>
     <DashboardPage
       user={userData as any}
       lists={listsOwned.data as any}
@@ -81,6 +83,7 @@ export default async function Dashboard() {
       sharedNotes={notesShared.data! as any}
       pendingRequestsCount={0}
     />
+    </Suspense>
   );
 }
 

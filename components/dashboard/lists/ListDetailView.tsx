@@ -1,4 +1,4 @@
-// components/lists/ListDetailView.tsx - UPDATED
+// components/lists/ListDetailView.tsx - UPDATED VERSION
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,6 +18,22 @@ interface Task {
   completed_at: string | null;
   created_by: string;
   completed_by: string | null;
+}
+
+interface SharedUser {
+  id: string;
+  name: string;
+  username: string;
+}
+
+interface ListShare {
+  id: string;
+  list_id: string;
+  user_id: string;
+  permission: 'view' | 'edit';
+  shared_by: string;
+  shared_at: string;
+  user: SharedUser;
 }
 
 interface ListDetailViewProps {
@@ -65,32 +81,87 @@ export default function ListDetailView({
   const [listDescription, setListDescription] = useState(list.description);
   const [isSharing, setIsSharing] = useState(false);
   const [shareUsername, setShareUsername] = useState('');
-  const [sharedUsers, setSharedUsers] = useState<any[]>([]);
+  const [sharePermission, setSharePermission] = useState<'view' | 'edit'>('view');
+  const [sharedUsers, setSharedUsers] = useState<ListShare[]>([]);
   const [isArchived, setIsArchived] = useState(list.is_archived);
   const [isPinned, setIsPinned] = useState(list.is_pinned);
+  const [userPermission, setUserPermission] = useState<'owner' | 'edit' | 'view' | null>(null);
 
   useEffect(() => {
     if (isOwner) {
       loadSharedUsers();
+      setUserPermission('owner');
+    } else {
+      checkUserPermission();
     }
-  }, [list.id, isOwner]);
+  }, [list.id, isOwner, userId]);
+
+  const checkUserPermission = async () => {
+    try {
+      // Check if user has a share record for this list
+      const { data: share, error } = await supabase
+        .from('list_shares')
+        .select('permission')
+        .eq('list_id', list.id)
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error checking user permission:', error);
+        setUserPermission('view'); // Default to view if no share found
+        return;
+      }
+
+      if (share) {
+        setUserPermission(share.permission as 'edit' | 'view');
+      } else {
+        setUserPermission('view'); // Default to view
+      }
+    } catch (error) {
+      console.error('Failed to check user permission:', error);
+      setUserPermission('view');
+    }
+  };
 
   const loadSharedUsers = async () => {
-    const { data } = await supabase
-      .from('list_shares')
-      .select(`
-        *,
-        user:profiles(name, username, email)
-      `)
-      .eq('list_id', list.id);
+    try {
+      const { data, error } = await supabase
+        .from('list_shares')
+        .select(`
+          *,
+          user:profiles!list_shares_user_id_fkey(id, name, username)
+        `)
+        .eq('list_id', list.id);
 
-    if (data) {
-      setSharedUsers(data);
+      if (error) {
+        console.error('Error loading shared users:', error);
+        throw error;
+      }
+
+      if (data) {
+        setSharedUsers(data as any);
+      }
+    } catch (error) {
+      console.error('Failed to load shared users:', error);
     }
+  };
+
+  const canEdit = () => {
+    return userPermission === 'owner' || userPermission === 'edit';
+  };
+
+  const canView = () => {
+    return userPermission === 'owner' || userPermission === 'edit' || userPermission === 'view';
   };
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
+
+    // Check permission
+    if (!canEdit()) {
+      alert('You do not have permission to add tasks');
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -101,13 +172,15 @@ export default function ListDetailView({
           priority: selectedPriority,
           is_completed: false,
           created_by: userId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      setTasks(prev => [...prev, data]);
+      setTasks(prev => [...prev, data as any]);
       setNewTaskTitle('');
       setSelectedPriority('medium');
       setShowNewTaskInput(false);
@@ -117,60 +190,68 @@ export default function ListDetailView({
   };
 
   const handleToggleTask = async (taskId: string) => {
-  const task = tasks.find(t => t.id === taskId);
-  if (!task) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
 
-  try {
-    const newIsCompleted = !task.is_completed;
-    
-    // Create the update object with all possible fields
-    const updateData: {
-      is_completed: boolean;
-      updated_at: string;
-      completed_at?: string | null;
-      completed_by?: string | null;
-    } = {
-      is_completed: newIsCompleted,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Add completion fields conditionally
-    if (newIsCompleted) {
-      updateData.completed_at = new Date().toISOString();
-      updateData.completed_by = userId;
-    } else {
-      // When uncompleting, explicitly set to null
-      updateData.completed_at = null;
-      updateData.completed_by = null;
+    // Check permission
+    if (!canEdit()) {
+      alert('You do not have permission to edit tasks');
+      return;
     }
 
-    const { error } = await supabase
-      .from('tasks')
-      .update(updateData)
-      .eq('id', taskId);
+    try {
+      const newIsCompleted = !task.is_completed;
+      
+      const updateData: {
+        is_completed: boolean;
+        updated_at: string;
+        completed_at?: string | null;
+        completed_by?: string | null;
+      } = {
+        is_completed: newIsCompleted,
+        updated_at: new Date().toISOString(),
+      };
 
-    if (error) throw error;
+      if (newIsCompleted) {
+        updateData.completed_at = new Date().toISOString();
+        updateData.completed_by = userId;
+      } else {
+        updateData.completed_at = null;
+        updateData.completed_by = null;
+      }
 
-    // Update local state
-    setTasks(prev => 
-      prev.map(t => 
-        t.id === taskId 
-          ? { 
-              ...t, 
-              is_completed: newIsCompleted,
-              completed_at: newIsCompleted ? new Date().toISOString() : null,
-              completed_by: newIsCompleted ? userId : null,
-              updated_at: new Date().toISOString(),
-            } 
-          : t
-      )
-    );
-  } catch (error) {
-    console.error('Error toggling task:', error);
-  }
-};
+      const { error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => 
+        prev.map(t => 
+          t.id === taskId 
+            ? { 
+                ...t, 
+                is_completed: newIsCompleted,
+                completed_at: newIsCompleted ? new Date().toISOString() : null,
+                completed_by: newIsCompleted ? userId : null,
+                updated_at: new Date().toISOString(),
+              } 
+            : t
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling task:', error);
+    }
+  };
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    // Check permission
+    if (!canEdit()) {
+      alert('You do not have permission to edit tasks');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('tasks')
@@ -195,6 +276,12 @@ export default function ListDetailView({
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    // Check permission
+    if (!canEdit()) {
+      alert('You do not have permission to delete tasks');
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     try {
@@ -212,6 +299,12 @@ export default function ListDetailView({
   };
 
   const handleUpdateList = async (updates: { title?: string; description?: string }) => {
+    // Only owner can update list details
+    if (!isOwner) {
+      alert('Only the list owner can update list details');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('lists')
@@ -233,6 +326,12 @@ export default function ListDetailView({
   };
 
   const handleTogglePin = async () => {
+    // Only owner can pin/unpin
+    if (!isOwner) {
+      alert('Only the list owner can pin/unpin the list');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('lists')
@@ -251,6 +350,12 @@ export default function ListDetailView({
   };
 
   const handleToggleArchive = async () => {
+    // Only owner can archive/unarchive
+    if (!isOwner) {
+      alert('Only the list owner can archive/unarchive the list');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('lists')
@@ -269,6 +374,12 @@ export default function ListDetailView({
   };
 
   const handleDeleteList = async () => {
+    // Only owner can delete list
+    if (!isOwner) {
+      alert('Only the list owner can delete the list');
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this list? All tasks will be deleted.')) {
       return;
     }
@@ -281,6 +392,14 @@ export default function ListDetailView({
         .eq('list_id', list.id);
 
       if (tasksError) throw tasksError;
+
+      // Delete all list shares
+      const { error: sharesError } = await supabase
+        .from('list_shares')
+        .delete()
+        .eq('list_id', list.id);
+
+      if (sharesError) throw sharesError;
 
       // Then delete the list
       const { error: listError } = await supabase
@@ -297,18 +416,33 @@ export default function ListDetailView({
   };
 
   const handleShareList = async () => {
-    if (!shareUsername.trim()) return;
+    // Only owner can share
+    if (!isOwner) {
+      alert('Only the list owner can share the list');
+      return;
+    }
+
+    if (!shareUsername.trim()) {
+      alert('Please enter a username');
+      return;
+    }
 
     try {
       // Find user by username
-      const { data: userToShare } = await supabase
+      const { data: userToShare, error: findError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, username, name')
         .eq('username', shareUsername.trim())
         .single();
 
-      if (!userToShare) {
+      if (findError) {
+        console.error('Find user error:', findError);
         alert('User not found');
+        return;
+      }
+
+      if (userToShare.id === userId) {
+        alert('Cannot share with yourself');
         return;
       }
 
@@ -325,27 +459,41 @@ export default function ListDetailView({
         return;
       }
 
-      // Create share
+      // Create share - use 'permission' not 'permission_type'
       const { error } = await supabase
         .from('list_shares')
         .insert({
           list_id: list.id,
           user_id: userToShare.id,
-          permission_type: 'view',
+          permission: sharePermission,
           shared_by: userId,
+          shared_at: new Date().toISOString(),
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error details:', error);
+        throw error;
+      }
 
+      // Refresh the shared users list
       await loadSharedUsers();
       setShareUsername('');
+      setSharePermission('view');
       setIsSharing(false);
+      alert(`List shared with ${userToShare.name || userToShare.username}!`);
     } catch (error) {
-      console.log('Error sharing list:', error);
+      console.error('Error sharing list:', error);
+      alert('Failed to share list. Please try again.');
     }
   };
 
   const handleRemoveShare = async (shareId: string) => {
+    // Only owner can remove shares
+    if (!isOwner) {
+      alert('Only the list owner can remove shares');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('list_shares')
@@ -360,6 +508,35 @@ export default function ListDetailView({
     }
   };
 
+  const handleUpdateSharePermission = async (shareId: string, newPermission: 'view' | 'edit') => {
+    // Only owner can update share permissions
+    if (!isOwner) {
+      alert('Only the list owner can update share permissions');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('list_shares')
+        .update({
+          permission: newPermission,
+        })
+        .eq('id', shareId);
+
+      if (error) throw error;
+
+      setSharedUsers(prev => 
+        prev.map(share => 
+          share.id === shareId 
+            ? { ...share, permission: newPermission }
+            : share
+        )
+      );
+    } catch (error) {
+      console.error('Error updating share permission:', error);
+    }
+  };
+
   // Filter tasks based on selected filter
   const filteredTasks = tasks.filter(task => {
     if (filter === 'active') return !task.is_completed;
@@ -371,6 +548,21 @@ export default function ListDetailView({
   const completedTasks = tasks.filter(t => t.is_completed);
   const completedCount = completedTasks.length;
   const totalCount = tasks.length;
+
+  // Show permission badge
+  const renderPermissionBadge = () => {
+    if (userPermission === 'owner') return null; // Don't show badge for owner
+    
+    return (
+      <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+        userPermission === 'edit' 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-blue-100 text-blue-800'
+      }`}>
+        {userPermission === 'edit' ? 'Can Edit' : 'View Only'}
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -427,6 +619,7 @@ export default function ListDetailView({
                     <h1 className="text-xl font-semibold flex items-center gap-2">
                       <span>{list.icon}</span>
                       {listTitle}
+                      {renderPermissionBadge()}
                       {isPinned && <span className="text-amber-500" title="Pinned">📍</span>}
                       {isArchived && <span className="text-gray-400" title="Archived">📦</span>}
                     </h1>
@@ -499,7 +692,11 @@ export default function ListDetailView({
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Share List</h2>
               <button
-                onClick={() => setIsSharing(false)}
+                onClick={() => {
+                  setIsSharing(false);
+                  setShareUsername('');
+                  setSharePermission('view');
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 ✕
@@ -508,7 +705,7 @@ export default function ListDetailView({
             
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username to share with
+                Share with username
               </label>
               <input
                 type="text"
@@ -516,12 +713,47 @@ export default function ListDetailView({
                 onChange={(e) => setShareUsername(e.target.value)}
                 placeholder="Enter username"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleShareList();
+                }}
               />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Permission Level
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSharePermission('view')}
+                  className={`flex-1 px-4 py-2 rounded-md border ${
+                    sharePermission === 'view' 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  View Only
+                </button>
+                <button
+                  onClick={() => setSharePermission('edit')}
+                  className={`flex-1 px-4 py-2 rounded-md border ${
+                    sharePermission === 'edit' 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Can Edit
+                </button>
+              </div>
             </div>
             
             <div className="flex justify-end gap-2">
               <button
-                onClick={() => setIsSharing(false)}
+                onClick={() => {
+                  setIsSharing(false);
+                  setShareUsername('');
+                  setSharePermission('view');
+                }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
                 Cancel
@@ -537,16 +769,34 @@ export default function ListDetailView({
             {sharedUsers.length > 0 && (
               <div className="mt-6 pt-6 border-t">
                 <h3 className="text-sm font-medium text-gray-700 mb-2">Shared with</h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {sharedUsers.map((share) => (
                     <div key={share.id} className="flex items-center justify-between">
-                      <span>{share.user.name || share.user.username}</span>
-                      <button
-                        onClick={() => handleRemoveShare(share.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
+                      <div>
+                        <div className="font-medium">
+                          {share.user?.name || share.user?.username || 'Unknown User'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          @{share.user?.username}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={share.permission}
+                          onChange={(e) => handleUpdateSharePermission(share.id, e.target.value as 'view' | 'edit')}
+                          className="text-sm border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="view">View</option>
+                          <option value="edit">Edit</option>
+                        </select>
+                        <button
+                          onClick={() => handleRemoveShare(share.id)}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -581,7 +831,7 @@ export default function ListDetailView({
         </div>
 
         {/* Add Task Section */}
-        {isOwner && !isArchived && (
+        {canEdit() && !isArchived && (
           <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
             {!showNewTaskInput ? (
               <button
@@ -658,7 +908,7 @@ export default function ListDetailView({
               </div>
               <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
               <p className="text-gray-500">
-                {isOwner && !isArchived ? 'Add your first task to get started' : 'No tasks in this list'}
+                {canEdit() && !isArchived ? 'Add your first task to get started' : 'No tasks in this list'}
               </p>
             </div>
           ) : (
@@ -670,12 +920,12 @@ export default function ListDetailView({
                 <div className="flex items-start gap-3">
                   <button
                     onClick={() => handleToggleTask(task.id)}
-                    disabled={!isOwner || isArchived}
+                    disabled={!canEdit() || isArchived}
                     className={`w-6 h-6 rounded-full border-2 flex-shrink-0 mt-1 ${
                       task.is_completed
                         ? 'bg-green-500 border-green-500'
                         : 'border-gray-300'
-                    } ${(!isOwner || isArchived) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                    } ${(!canEdit() || isArchived) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                   >
                     {task.is_completed && (
                       <span className="text-white text-sm">✓</span>
@@ -710,7 +960,7 @@ export default function ListDetailView({
                     </div>
                   </div>
                   
-                  {isOwner && !isArchived && (
+                  {canEdit() && !isArchived && (
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => {
