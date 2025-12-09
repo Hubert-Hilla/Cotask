@@ -1,22 +1,40 @@
-// components/dashboard/notes/NoteEditor.tsx - FINAL COMPLETE VERSION
+// components/dashboard/notes/NoteEditor.tsx - UPDATED WITH SHARING
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
+interface SharedUser {
+  id: string;
+  name: string;
+  username: string;
+}
+
+interface NoteShare {
+  id: string;
+  note_id: string;
+  user_id: string;
+  permission: 'view' | 'edit';
+  shared_by: string;
+  shared_at: string;
+  user: SharedUser;
+}
+
 interface NoteEditorProps {
   noteId: string;
   initialTitle?: string;
   initialContent?: string;
   isOwner: boolean;
+  userPermission: 'owner' | 'edit' | 'view';
 }
 
 export default function NoteEditor({ 
   noteId, 
   initialTitle = '', 
   initialContent = '', 
-  isOwner 
+  isOwner,
+  userPermission: initialUserPermission
 }: NoteEditorProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -31,6 +49,11 @@ export default function NoteEditor({
     bold: false,
     italic: false,
   });
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUsername, setShareUsername] = useState('');
+  const [sharePermission, setSharePermission] = useState<'view' | 'edit'>('view');
+  const [sharedUsers, setSharedUsers] = useState<NoteShare[]>([]);
+  const [userPermission, setUserPermission] = useState<'owner' | 'edit' | 'view'>(initialUserPermission);
   
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -38,10 +61,44 @@ export default function NoteEditor({
   const lastSelectionRef = useRef<Range | null>(null);
   const todoInputsRef = useRef<Map<string, HTMLInputElement>>(new Map());
 
+  // Load shared users if owner
+  useEffect(() => {
+    if (isOwner) {
+      loadSharedUsers();
+    }
+  }, [noteId, isOwner]);
+
+  const loadSharedUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('note_shares')
+        .select(`
+          *,
+          user:profiles!note_shares_user_id_fkey(id, name, username)
+        `)
+        .eq('note_id', noteId);
+
+      if (error) {
+        console.error('Error loading shared users:', error);
+        throw error;
+      }
+
+      if (data) {
+        setSharedUsers(data as any);
+      }
+    } catch (error) {
+      console.error('Failed to load shared users:', error);
+    }
+  };
+
+  const canEdit = () => {
+    return userPermission === 'owner' || userPermission === 'edit';
+  };
+
   // Check active formatting on selection change
   useEffect(() => {
     const checkActiveFormatting = () => {
-      if (!isOwner || !editorRef.current) return;
+      if (!canEdit() || !editorRef.current) return;
       
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
@@ -65,7 +122,7 @@ export default function NoteEditor({
         editor.removeEventListener('keyup', checkActiveFormatting);
       };
     }
-  }, [isOwner]);
+  }, [canEdit]);
 
   // Save selection before content updates
   const saveSelection = () => {
@@ -99,7 +156,7 @@ export default function NoteEditor({
 
   // Formatting functions
   const applyFormat = (command: string, value?: string) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || !canEdit()) return;
     
     saveSelection();
     
@@ -119,6 +176,11 @@ export default function NoteEditor({
   };
 
   const insertHeading = (level: 1 | 2) => {
+    if (!canEdit()) {
+      alert('You do not have permission to edit this note');
+      return;
+    }
+
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || !editorRef.current) return;
 
@@ -173,7 +235,10 @@ export default function NoteEditor({
   };
 
   const insertList = (ordered: boolean) => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || !canEdit()) {
+      alert('You do not have permission to edit this note');
+      return;
+    }
     
     saveSelection();
     
@@ -185,7 +250,10 @@ export default function NoteEditor({
   };
 
   const insertTodo = () => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || !canEdit()) {
+      alert('You do not have permission to edit this note');
+      return;
+    }
     
     saveSelection();
     
@@ -259,11 +327,11 @@ export default function NoteEditor({
     
     // Delete button
     const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button'; // Important: prevent form submission
+    deleteBtn.type = 'button';
     deleteBtn.innerHTML = '×';
     deleteBtn.className = 'text-gray-500 hover:text-red-500 font-bold text-xl px-2';
     deleteBtn.onclick = (e) => {
-      e.stopPropagation(); // Prevent event bubbling
+      e.stopPropagation();
       todoWrapper.remove();
       todoInputsRef.current.delete(todoId);
       handleEditorChange();
@@ -292,7 +360,6 @@ export default function NoteEditor({
       // Focus the input after a short delay
       setTimeout(() => {
         textInput.focus();
-        // Don't restore selection when focusing todo
         lastSelectionRef.current = null;
       }, 50);
     } catch (e) {
@@ -302,7 +369,7 @@ export default function NoteEditor({
 
   // Handle editor content changes
   const handleEditorChange = () => {
-    if (!editorRef.current || isUpdatingRef.current) return;
+    if (!editorRef.current || isUpdatingRef.current || !canEdit()) return;
     
     isUpdatingRef.current = true;
     
@@ -339,6 +406,11 @@ export default function NoteEditor({
   };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent) => {
+    if (!canEdit()) {
+      e.preventDefault();
+      return;
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       
@@ -406,7 +478,7 @@ export default function NoteEditor({
 
   // Save note with debouncing
   const saveNote = async () => {
-    if (!isOwner) return;
+    if (!canEdit()) return;
     
     setIsSaving(true);
     
@@ -433,6 +505,8 @@ export default function NoteEditor({
 
   // Auto-save on changes
   useEffect(() => {
+    if (!canEdit()) return;
+    
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -441,14 +515,14 @@ export default function NoteEditor({
       if (title !== initialTitle || content !== initialContent) {
         saveNote();
       }
-    }, 1000); // 1 second debounce
+    }, 1000);
 
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [title, content]);
+  }, [title, content, canEdit]);
 
   // Initialize editor content on mount
   useEffect(() => {
@@ -481,6 +555,11 @@ export default function NoteEditor({
 
   // Handle note deletion
   const handleDeleteNote = async () => {
+    if (!isOwner) {
+      alert('Only the note owner can delete this note');
+      return;
+    }
+
     if (!confirm('Are you sure you want to delete this note?')) return;
 
     try {
@@ -499,6 +578,11 @@ export default function NoteEditor({
 
   // Handle pin/unpin
   const handleTogglePin = async () => {
+    if (!isOwner) {
+      alert('Only the note owner can pin/unpin the note');
+      return;
+    }
+
     try {
       const newPinnedState = !isPinned;
       setIsPinned(newPinnedState);
@@ -513,16 +597,20 @@ export default function NoteEditor({
 
       if (error) throw error;
 
-      // Save note content as well when toggling pin
       saveNote();
     } catch (error) {
       console.error('Error toggling pin:', error);
-      setIsPinned(!isPinned); // Revert on error
+      setIsPinned(!isPinned);
     }
   };
 
   // Handle archive/unarchive
   const handleToggleArchive = async () => {
+    if (!isOwner) {
+      alert('Only the note owner can archive/unarchive the note');
+      return;
+    }
+
     try {
       const newArchivedState = !isArchived;
       setIsArchived(newArchivedState);
@@ -537,18 +625,152 @@ export default function NoteEditor({
 
       if (error) throw error;
 
-      // Save note content as well when toggling archive
       saveNote();
     } catch (error) {
       console.error('Error toggling archive:', error);
-      setIsArchived(!isArchived); // Revert on error
+      setIsArchived(!isArchived);
     }
   };
 
-  // Focus handler for todo inputs
-  const handleTodoFocus = (todoId: string) => {
-    // When todo input gets focus, don't restore selection
-    lastSelectionRef.current = null;
+  // Sharing functions
+  const handleShareNote = async () => {
+    if (!isOwner) {
+      alert('Only the note owner can share the note');
+      return;
+    }
+
+    if (!shareUsername.trim()) {
+      alert('Please enter a username');
+      return;
+    }
+
+    try {
+      // Find user by username
+      const { data: userToShare, error: findError } = await supabase
+        .from('profiles')
+        .select('id, username, name')
+        .eq('username', shareUsername.trim())
+        .single();
+
+      if (findError) {
+        console.error('Find user error:', findError);
+        alert('User not found');
+        return;
+      }
+
+      // Get current user's ID
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        alert('You must be logged in to share notes');
+        return;
+      }
+
+      if (userToShare.id === currentUser.id) {
+        alert('Cannot share with yourself');
+        return;
+      }
+
+      // Check if already shared
+      const { data: existingShare } = await supabase
+        .from('note_shares')
+        .select('*')
+        .eq('note_id', noteId)
+        .eq('user_id', userToShare.id)
+        .maybeSingle();
+
+      if (existingShare) {
+        alert('Note already shared with this user');
+        return;
+      }
+
+      // Create share
+      const { error } = await supabase
+        .from('note_shares')
+        .insert({
+          note_id: noteId,
+          user_id: userToShare.id,
+          permission: sharePermission,
+          shared_by: currentUser.id,
+          shared_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('Insert error details:', error);
+        throw error;
+      }
+
+      await loadSharedUsers();
+      setShareUsername('');
+      setSharePermission('view');
+      setIsSharing(false);
+      alert(`Note shared with ${userToShare.name || userToShare.username}!`);
+    } catch (error) {
+      console.error('Error sharing note:', error);
+      alert('Failed to share note. Please try again.');
+    }
+  };
+
+  const handleRemoveShare = async (shareId: string) => {
+    if (!isOwner) {
+      alert('Only the note owner can remove shares');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('note_shares')
+        .delete()
+        .eq('id', shareId);
+
+      if (error) throw error;
+
+      setSharedUsers(prev => prev.filter(share => share.id !== shareId));
+    } catch (error) {
+      console.error('Error removing share:', error);
+    }
+  };
+
+  const handleUpdateSharePermission = async (shareId: string, newPermission: 'view' | 'edit') => {
+    if (!isOwner) {
+      alert('Only the note owner can update share permissions');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('note_shares')
+        .update({
+          permission: newPermission,
+        })
+        .eq('id', shareId);
+
+      if (error) throw error;
+
+      setSharedUsers(prev => 
+        prev.map(share => 
+          share.id === shareId 
+            ? { ...share, permission: newPermission }
+            : share
+        )
+      );
+    } catch (error) {
+      console.error('Error updating share permission:', error);
+    }
+  };
+
+  // Render permission badge
+  const renderPermissionBadge = () => {
+    if (userPermission === 'owner') return null;
+    
+    return (
+      <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+        userPermission === 'edit' 
+          ? 'bg-green-100 text-green-800' 
+          : 'bg-blue-100 text-blue-800'
+      }`}>
+        {userPermission === 'edit' ? 'Can Edit' : 'View Only'}
+      </span>
+    );
   };
 
   return (
@@ -572,7 +794,7 @@ export default function NoteEditor({
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Note title..."
                   className="text-xl font-semibold bg-transparent border-none outline-none w-full"
-                  readOnly={!isOwner}
+                  readOnly={!canEdit()}
                 />
                 <div className="flex items-center gap-4 text-sm text-gray-500">
                   {lastSaved && (
@@ -581,59 +803,195 @@ export default function NoteEditor({
                   {isSaving && (
                     <span className="text-blue-500">Saving...</span>
                   )}
+                  {renderPermissionBadge()}
                 </div>
               </div>
             </div>
 
-            {isOwner && (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {isOwner && (
                 <button
-                  onClick={handleTogglePin}
-                  className={`p-2 rounded-lg ${isPinned ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  title={isPinned ? 'Unpin' : 'Pin'}
+                  onClick={() => setIsSharing(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
                 >
-                  {isPinned ? '📍' : '📌'}
+                  <span>🔗</span>
+                  Share
                 </button>
-                
-                <button
-                  onClick={handleToggleArchive}
-                  className={`p-2 rounded-lg ${isArchived ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  title={isArchived ? 'Unarchive' : 'Archive'}
-                >
-                  {isArchived ? '📤' : '📦'}
-                </button>
-                
-                <div className="relative group">
-                  <button className="p-2 rounded-lg hover:bg-gray-100">
-                    ⋯
+              )}
+              
+              {isOwner && (
+                <>
+                  <button
+                    onClick={handleTogglePin}
+                    className={`p-2 rounded-lg ${isPinned ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    title={isPinned ? 'Unpin' : 'Pin'}
+                  >
+                    {isPinned ? '📍' : '📌'}
                   </button>
-                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                    <button
-                      onClick={() => {
-                        if (editorRef.current) {
-                          editorRef.current.focus();
-                        }
-                      }}
-                      className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
-                    >
-                      ✏️ Focus Editor
-                    </button>
+                  
+                  <button
+                    onClick={handleToggleArchive}
+                    className={`p-2 rounded-lg ${isArchived ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    title={isArchived ? 'Unarchive' : 'Archive'}
+                  >
+                    {isArchived ? '📤' : '📦'}
+                  </button>
+                </>
+              )}
+              
+              <div className="relative group">
+                <button className="p-2 rounded-lg hover:bg-gray-100">
+                  ⋯
+                </button>
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  <button
+                    onClick={() => {
+                      if (editorRef.current) {
+                        editorRef.current.focus();
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                  >
+                    ✏️ Focus Editor
+                  </button>
+                  {isOwner && (
                     <button
                       onClick={handleDeleteNote}
                       className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 last:rounded-b-lg"
                     >
                       🗑️ Delete Note
                     </button>
-                  </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Share Modal */}
+      {isSharing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Share Note</h2>
+              <button
+                onClick={() => {
+                  setIsSharing(false);
+                  setShareUsername('');
+                  setSharePermission('view');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Share with username
+              </label>
+              <input
+                type="text"
+                value={shareUsername}
+                onChange={(e) => setShareUsername(e.target.value)}
+                placeholder="Enter username"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleShareNote();
+                }}
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Permission Level
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSharePermission('view')}
+                  className={`flex-1 px-4 py-2 rounded-md border ${
+                    sharePermission === 'view' 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  View Only
+                </button>
+                <button
+                  onClick={() => setSharePermission('edit')}
+                  className={`flex-1 px-4 py-2 rounded-md border ${
+                    sharePermission === 'edit' 
+                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  Can Edit
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsSharing(false);
+                  setShareUsername('');
+                  setSharePermission('view');
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShareNote}
+                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+              >
+                Share
+              </button>
+            </div>
+
+            {sharedUsers.length > 0 && (
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Shared with</h3>
+                <div className="space-y-3">
+                  {sharedUsers.map((share) => (
+                    <div key={share.id} className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">
+                          {share.user?.name || share.user?.username || 'Unknown User'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          @{share.user?.username}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={share.permission}
+                          onChange={(e) => handleUpdateSharePermission(share.id, e.target.value as 'view' | 'edit')}
+                          className="text-sm border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value="view">View</option>
+                          <option value="edit">Edit</option>
+                        </select>
+                        <button
+                          onClick={() => handleRemoveShare(share.id)}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
         </div>
-      </header>
+      )}
 
       {/* Toolbar */}
-      {isOwner && (
+      {canEdit() && (
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 py-2">
             <div className="flex flex-wrap gap-2">
@@ -704,7 +1062,7 @@ export default function NoteEditor({
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div
           ref={editorRef}
-          contentEditable={isOwner}
+          contentEditable={canEdit()}
           onInput={handleEditorInput}
           onClick={handleEditorClick}
           onKeyDown={handleEditorKeyDown}
@@ -720,7 +1078,7 @@ export default function NoteEditor({
         />
         
         {/* Editor help text */}
-        {isOwner && (
+        {canEdit() && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-700">
               <strong>Tip:</strong> Use the toolbar above to format your text. Changes are auto-saved.
@@ -734,10 +1092,10 @@ export default function NoteEditor({
           </div>
         )}
         
-        {!isOwner && (
+        {!canEdit() && (
           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-yellow-700">
-              You have view-only access to this note. Only the owner can edit it.
+              You have view-only access to this note. Only users with edit permission can modify it.
             </p>
           </div>
         )}

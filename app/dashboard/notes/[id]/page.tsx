@@ -1,4 +1,4 @@
-// app/dashboard/notes/[id]/page.tsx
+// app/dashboard/notes/[id]/page.tsx - UPDATED VERSION
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
@@ -36,12 +36,15 @@ export default async function NotePage({
 
   // Check if user has access to this note
   const isOwner = note.created_by === user.id;
+  let userPermission: 'owner' | 'edit' | 'view' = 'view';
 
-  if (!isOwner) {
+  if (isOwner) {
+    userPermission = 'owner';
+  } else {
     // Check if note is shared with user
     const { data: sharedNote } = await supabase
       .from("note_shares")
-      .select("*")
+      .select("permission")
       .eq("note_id", noteId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -49,6 +52,8 @@ export default async function NotePage({
     if (!sharedNote) {
       redirect("/dashboard"); // No access
     }
+
+    userPermission = sharedNote.permission as 'edit' | 'view';
   }
 
   // Fetch note owner profile
@@ -64,6 +69,7 @@ export default async function NotePage({
       initialTitle={note.title}
       initialContent={note.content || ''}
       isOwner={isOwner}
+      userPermission={userPermission}
     />
   );
 }
