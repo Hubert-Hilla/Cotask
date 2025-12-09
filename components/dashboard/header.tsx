@@ -1,20 +1,94 @@
 // components/dashboard/layout/DashboardHeader.tsx
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
 interface DashboardHeaderProps {
   user: {
     name: string;
     email: string;
     avatar?: string;
     username: string;
+    id: string;
   };
-  pendingRequestsCount: number;
   onLogout: () => void;
 }
 
-export default function DashboardHeader({ user, pendingRequestsCount, onLogout }: DashboardHeaderProps) {
+export default function DashboardHeader({ user, onLogout }: DashboardHeaderProps) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
+  // Fetch pending requests count
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) return;
+
+        const { count, error } = await supabase
+          .from('user_relationships')
+          .select('*', { count: 'exact', head: true })
+          .eq('related_user_id', currentUser.id)
+          .eq('relationship_type', 'pending');
+
+        if (error) throw error;
+        setPendingRequestsCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching pending requests:', error);
+      }
+    };
+
+    fetchPendingRequests();
+
+    // Set up real-time subscription for relationship updates
+    const channel = supabase
+      .channel('relationships-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_relationships',
+          filter: `related_user_id=eq.${user.id}`
+        },
+        () => {
+          fetchPendingRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, user.id]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleContactsClick = () => {
+    router.push('/dashboard/contacts');
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -28,7 +102,7 @@ export default function DashboardHeader({ user, pendingRequestsCount, onLogout }
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => console.log('Navigate to contacts')}
+              onClick={handleContactsClick}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors relative"
             >
               <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,36 +116,56 @@ export default function DashboardHeader({ user, pendingRequestsCount, onLogout }
               )}
             </button>
 
-            <div className="relative">
-              <button className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              >
                 <div className="text-right hidden md:block">
-                  <div>{user.name}</div>
+                  <div className="font-medium">{user.name}</div>
                   <div className="text-sm text-gray-500">@{user.username}</div>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-medium">
                   {user.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full" />
+                    <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
                   ) : (
                     initials
                   )}
                 </div>
               </button>
               
-              {/* Simple dropdown - you can enhance this */}
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden">
-                <button className="w-full px-4 py-2 text-left hover:bg-gray-50">
-                  Profile
-                </button>
-                <button className="w-full px-4 py-2 text-left hover:bg-gray-50">
-                  Settings
-                </button>
-                <button
-                  onClick={onLogout}
-                  className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50"
-                >
-                  Logout
-                </button>
-              </div>
+              {/* Dropdown menu */}
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <button 
+                    onClick={() => {
+                      router.push('/dashboard/profile');
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                  >
+                    Profile
+                  </button>
+                  <button 
+                    onClick={() => {
+                      router.push('/dashboard/settings');
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50"
+                  >
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setShowDropdown(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50 last:rounded-b-lg"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

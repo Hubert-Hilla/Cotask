@@ -68,6 +68,7 @@ export default async function Dashboard() {
     name: profile.data.name,
     email: user.data.user.email,
     username: profile.data.username,
+    id: profile.data.id,
     avatar: ""
   };
 

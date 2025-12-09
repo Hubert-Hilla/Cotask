@@ -341,7 +341,7 @@ export default function ListDetailView({
       setShareUsername('');
       setIsSharing(false);
     } catch (error) {
-      console.error('Error sharing list:', error);
+      console.log('Error sharing list:', error);
     }
   };
 

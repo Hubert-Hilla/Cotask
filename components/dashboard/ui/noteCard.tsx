@@ -1,5 +1,7 @@
-// components/dashboard/ui/NoteCard.tsx
+// components/dashboard/ui/NoteCard.tsx - UPDATED FOR NAVIGATION
 'use client';
+
+import { useRouter } from 'next/navigation';
 
 interface NoteCardProps {
   id: string;
@@ -30,11 +32,23 @@ export default function NoteCard({
   onEdit,
   onDelete,
 }: NoteCardProps) {
+  const router = useRouter();
   const preview = content.length > 100 ? content.substring(0, 100) + '...' : content;
   
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick();
+    } else {
+      router.push(`/dashboard/notes/${id}`);
+    }
+  };
+
   if (viewMode === 'list') {
     return (
-      <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
+      <div 
+        className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+        onClick={handleClick}
+      >
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
             <span className="text-xl">📝</span>
@@ -43,9 +57,9 @@ export default function NoteCard({
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-medium truncate">{title}</h3>
               {isPinned && (
-                <svg className="w-4 h-4 text-amber-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                </svg>
+                <span className="text-amber-500 flex-shrink-0" title="Pinned">
+                  📍
+                </span>
               )}
             </div>
             
@@ -58,7 +72,7 @@ export default function NoteCard({
           </div>
           
           {/* Action buttons for list view */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {onPin && (
               <button
                 onClick={(e) => {
@@ -77,9 +91,7 @@ export default function NoteCard({
                 className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
                 title="More actions"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
+                <span className="text-sm">⋯</span>
               </button>
               
               {/* Dropdown menu */}
@@ -129,7 +141,7 @@ export default function NoteCard({
   return (
     <div 
       className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group"
-      onClick={onClick}
+      onClick={handleClick}
     >
       {/* Header with icon and actions */}
       <div className="flex items-start justify-between mb-3">
@@ -140,9 +152,7 @@ export default function NoteCard({
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {isPinned && (
             <div className="p-1">
-              <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
+              <span className="text-amber-500" title="Pinned">📍</span>
             </div>
           )}
           
@@ -178,7 +188,7 @@ export default function NoteCard({
       </div>
       
       {/* Action buttons (hidden until hover) */}
-      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         {onEdit && (
           <button
             onClick={(e) => {
