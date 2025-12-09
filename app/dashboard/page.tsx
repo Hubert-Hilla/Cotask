@@ -67,7 +67,7 @@ export default async function Dashboard() {
   
   const userData = {
     name: profile.data.name,
-    email: user.data.user.email,
+    email: user.data.user.email!,
     username: profile.data.username,
     id: profile.data.id,
     avatar: ""
@@ -76,12 +76,11 @@ export default async function Dashboard() {
   return (
     <Suspense>
     <DashboardPage
-      user={userData as any}
+      user={userData}
       lists={listsOwned.data as any}
       notes={notesOwned.data! as any}
       sharedLists={listsShared.data! as any}
       sharedNotes={notesShared.data! as any}
-      pendingRequestsCount={0}
     />
     </Suspense>
   );

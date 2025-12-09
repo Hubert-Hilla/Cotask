@@ -26,12 +26,12 @@ interface DashboardPageProps {
     email: string;
     avatar?: string;
     username: string;
+    id: string;
   };
   lists: ListWithTasks[];
   notes: NoteFromDB[];
   sharedLists: ListWithTasks[]; 
   sharedNotes: NoteFromDB[]; 
-  pendingRequestsCount: number;
 }
 
 export default function DashboardPage({
@@ -40,7 +40,6 @@ export default function DashboardPage({
   notes: initialNotes,
   sharedLists: initialSharedLists,
   sharedNotes: initialSharedNotes,
-  pendingRequestsCount,
 }: DashboardPageProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -483,7 +482,6 @@ export default function DashboardPage({
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader
         user={user}
-        pendingRequestsCount={pendingRequestsCount}
         onLogout={handleLogout}
       />
       
