@@ -23,6 +23,8 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -38,6 +40,16 @@ export function SignUpForm({
       setIsLoading(false);
       return;
     }
+    if(name.trim().length === 0) {
+      setError("Name is required");
+      setIsLoading(false);
+      return;
+    }
+    if(username.trim().length === 0) {
+      setError("Username is required");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { error } = await supabase.auth.signUp({
@@ -45,6 +57,10 @@ export function SignUpForm({
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/protected`,
+          data: {
+            name: name,
+            username: username,
+          }
         },
       });
       if (error) throw error;
@@ -101,6 +117,28 @@ export function SignUpForm({
                   onChange={(e) => setRepeatPassword(e.target.value)}
                 />
               </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating an account..." : "Sign up"}
