@@ -1,5 +1,9 @@
 // components/landing-page-new.tsx
 import React from "react";
+import PrivacyPolicy from "./privacy";
+import FeaturesCarousel from "../FeaturesCarousel";
+import StartButton, { StartButtonWhite } from "../ui/startButton";
+
 
 export default function LandingPageNew() {
   return (
@@ -35,12 +39,7 @@ export default function LandingPageNew() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] hover:from-[#4338CA] hover:to-[#6D28D9] text-white px-8 py-4 rounded-lg shadow-lg text-lg font-medium transition-all hover:shadow-xl" >
-             Get Started Free
-            <svg className="ml-2 w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-             </svg>
-        </button>
+             <StartButton/>
 
             <button className="px-8 py-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-lg font-medium transition-colors">
               Watch Demo
@@ -79,46 +78,7 @@ export default function LandingPageNew() {
       </section>
 
       {/* Features Carousel Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl mb-4">
-              Everything you need,
-              <br />
-              <span className="text-[#4F46E5]">
-                nothing you don't
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Designed for simplicity. Built for collaboration.
-            </p>
-          </div>
-
-          {/* Horizontal scrolling features */}
-          <div className="overflow-x-auto pb-8 hide-scrollbar">
-            <div className="flex gap-6 w-max px-4">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="w-80 flex-shrink-0 hover:-translate-y-2 transition-transform duration-300"
-                >
-                  <div className="p-8 rounded-2xl bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 h-full">
-                    <div
-                      className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg`}
-                    >
-                      <feature.icon className="w-7 h-7 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-semibold mb-3">{feature.title}</h3>
-                    <p className="text-gray-600">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <FeaturesCarousel />
 
       {/* Simplicity Section */}
       <section className="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
@@ -140,14 +100,7 @@ export default function LandingPageNew() {
                 Cotask gets out of your way so you can focus on
                 what matters: getting things done.
               </p>
-              <button
-                className="bg-[#4F46E5] hover:bg-[#4338CA] text-white px-8 py-4 rounded-lg text-lg font-medium transition-colors"
-              >
-                Start for Free
-                <svg className="ml-2 w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
+              <StartButton />
             </div>
 
             <div className="relative">
@@ -174,14 +127,7 @@ export default function LandingPageNew() {
                 Join others who've already made the switch to
                 effortless task management
               </p>
-              <button
-                className="bg-white text-[#4F46E5] hover:bg-gray-100 text-lg px-8 py-4 rounded-lg font-medium transition-colors"
-              >
-                Get Started - It's Free
-                <svg className="ml-2 w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
+              <StartButtonWhite/>
             </div>
           </div>
         </div>
@@ -254,79 +200,7 @@ export default function LandingPageNew() {
       </section>
 
       {/* Privacy Section */}
-      <section id="privacy" className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl md:text-5xl mb-8 text-center">
-              Privacy Policy
-            </h2>
-
-            <div className="space-y-8 text-lg text-gray-600">
-              {/* Privacy content remains similar but with simplified icons */}
-              <div>
-                <p className="text-gray-900 mb-4">
-                  <strong>
-                    Last Updated: December 5, 2024
-                  </strong>
-                </p>
-                <p>
-                  At Cotask, we take your privacy seriously.
-                  This Privacy Policy explains how we collect,
-                  use, and protect your information when you use
-                  our service.
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-8 space-y-4">
-                <h3 className="text-xl text-gray-900">
-                  Our Core Principles
-                </h3>
-                <ul className="space-y-3">
-                  {privacyPrinciples.map((principle, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-[#4F46E5] mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{principle}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Rest of privacy sections with simplified content */}
-              <div>
-                <h3 className="text-xl text-gray-900 mb-3">
-                  1. Information We Collect
-                </h3>
-                <p className="mb-3">
-                  <strong className="text-gray-900">
-                    Account Information:
-                  </strong>{" "}
-                  When you create an account, we collect your
-                  email address, username, and password
-                  (encrypted).
-                </p>
-                <p className="mb-3">
-                  <strong className="text-gray-900">
-                    Content:
-                  </strong>{" "}
-                  We store the content you create including task
-                  lists, notes, todo items.
-                </p>
-                <p>
-                  <strong className="text-gray-900">
-                    Usage Data:
-                  </strong>{" "}
-                  We may collect basic usage information to
-                  improve Cotask and fix bugs.
-                </p>
-              </div>
-
-              {/* ... More privacy sections ... */}
-            </div>
-          </div>
-        </div>
-      </section>
+      <PrivacyPolicy />
     </div>
   );
 }
@@ -380,12 +254,6 @@ const perfectFor = [
   },
 ];
 
-const privacyPrinciples = [
-  "Your data is yours. We never sell it to anyone.",
-  "We collect only what's necessary to provide the service.",
-  "You have full control over your data at all times.",
-  "We're transparent about our practices.",
-];
 
 // SVG Icon Components
 function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
