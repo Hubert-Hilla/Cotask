@@ -1,8 +1,18 @@
-// components/dashboard/ui/NoteCard.tsx - FIXED VERSION
+// components/dashboard/ui/NoteCard.tsx - UPDATED
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import UserAvatars from '@/components/dashboard/ui/usersAvatar';
+
+interface SharedUser {
+  id: string;
+  name: string;
+  username: string;
+  avatar_url: string | null;
+  initials: string;
+  permission: 'view' | 'edit';
+}
 
 interface NoteCardProps {
   id: string;
@@ -11,7 +21,9 @@ interface NoteCardProps {
   lastEdited: string;
   createdDate: string;
   isPinned: boolean;
-  isArchived?: boolean;  // Add this prop
+  isArchived?: boolean;
+  isShared?: boolean;
+  sharedUsers?: SharedUser[];
   viewMode: 'grid' | 'list';
   onClick?: () => void;
   onPin?: () => void;
@@ -47,6 +59,8 @@ export default function NoteCard({
   createdDate,
   isPinned,
   isArchived = false,
+  isShared = false,
+  sharedUsers = [],
   viewMode,
   onClick,
   onPin,
@@ -98,6 +112,11 @@ export default function NoteCard({
                   Archived
                 </span>
               )}
+              {isShared && (
+                <span className="text-blue-500 text-sm bg-blue-100 px-2 py-1 rounded" title="Shared with you">
+                  Shared
+                </span>
+              )}
             </div>
             
             <p className={`text-sm mb-2 line-clamp-2 ${
@@ -106,20 +125,27 @@ export default function NoteCard({
               {preview}
             </p>
             
-            <div className="flex items-center gap-4 text-sm">
-              <span className={isArchived ? 'text-gray-400' : 'text-gray-500'}>
-                Edited: {new Date(lastEdited).toLocaleDateString()}
-              </span>
-              <span className={isArchived ? 'text-gray-400' : 'text-gray-500'}>
-                Created: {new Date(createdDate).toLocaleDateString()}
-              </span>
+            <div className="flex items-center justify-between text-sm">
+              <div className="space-x-4">
+                <span className={isArchived ? 'text-gray-400' : 'text-gray-500'}>
+                  Edited: {new Date(lastEdited).toLocaleDateString()}
+                </span>
+                <span className={isArchived ? 'text-gray-400' : 'text-gray-500'}>
+                  Created: {new Date(createdDate).toLocaleDateString()}
+                </span>
+              </div>
+              
+              {/* Shared users avatars */}
+              {sharedUsers && sharedUsers.length > 0 && (
+                <UserAvatars users={sharedUsers} size="sm" />
+              )}
             </div>
           </div>
           
           {/* Action buttons for list view */}
           {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && (
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {onPin && !isArchived && (
+              {onPin && !isArchived && !isShared && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -136,7 +162,7 @@ export default function NoteCard({
                 </button>
               )}
               
-              {onArchive && (
+              {onArchive && !isShared && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -153,51 +179,53 @@ export default function NoteCard({
                 </button>
               )}
               
-              <div className="relative group">
-                <button
-                  className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                  title="More actions"
-                >
-                  <span className="text-sm">⋯</span>
-                </button>
-                
-                {/* Dropdown menu */}
-                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                  {onEdit && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit();
-                      }}
-                      className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
-                    >
-                      ✏️ Edit
-                    </button>
-                  )}
-                  {onArchive && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onArchive();
-                      }}
-                      className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50"
-                    >
-                      {isArchived ? '📤 Unarchive' : '📦 Archive'}
-                    </button>
-                  )}
-                  {onDelete && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete();
-                      }}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 last:rounded-b-lg"
-                    >
-                      🗑️ Delete
-                    </button>
-                  )}
+              {(onEdit || onDelete) && !isShared && (
+                <div className="relative group">
+                  <button
+                    className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    title="More actions"
+                  >
+                    <span className="text-sm">⋯</span>
+                  </button>
+                  
+                  {/* Dropdown menu */}
+                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                    {onEdit && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit();
+                        }}
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
+                    {onArchive && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onArchive();
+                        }}
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50"
+                      >
+                        {isArchived ? '📤 Unarchive' : '📦 Archive'}
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete();
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                      >
+                        🗑️ Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -215,7 +243,7 @@ export default function NoteCard({
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      {/* Header with icon and actions */}
+      {/* Header with icon, actions, and user avatars */}
       <div className="flex items-start justify-between mb-3">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
           isArchived ? 'bg-gray-200' : 'bg-gray-100'
@@ -223,31 +251,38 @@ export default function NoteCard({
           <span className="text-xl">{isArchived ? '📦' : '📝'}</span>
         </div>
         
-        <div className={`flex items-center gap-1 transition-opacity ${
-          showActions || isPinned ? 'opacity-100' : 'opacity-0'
-        }`}>
-          {isPinned && !isArchived && (
-            <div className="p-1">
-              <span className="text-amber-500" title="Pinned">📍</span>
-            </div>
+        <div className="flex items-center gap-2">
+          {/* Shared users avatars */}
+          {sharedUsers && sharedUsers.length > 0 && (
+            <UserAvatars users={sharedUsers} size="sm" />
           )}
           
-          {onPin && !isArchived && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPin();
-              }}
-              className={`p-1 rounded transition-colors ${
-                isPinned 
-                  ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
-                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-              }`}
-              title={isPinned ? 'Unpin' : 'Pin'}
-            >
-              {isPinned ? '📍' : '📌'}
-            </button>
-          )}
+          <div className={`flex items-center gap-1 transition-opacity ${
+            showActions || isPinned ? 'opacity-100' : 'opacity-0'
+          }`}>
+            {isPinned && !isArchived && !isShared && (
+              <div className="p-1">
+                <span className="text-amber-500" title="Pinned">📍</span>
+              </div>
+            )}
+            
+            {onPin && !isArchived && !isShared && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPin();
+                }}
+                className={`p-1 rounded transition-colors ${
+                  isPinned 
+                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+                title={isPinned ? 'Unpin' : 'Pin'}
+              >
+                {isPinned ? '📍' : '📌'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
       
@@ -257,6 +292,11 @@ export default function NoteCard({
         {isArchived && (
           <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
             Archived
+          </span>
+        )}
+        {isShared && (
+          <span className="ml-2 text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
+            Shared
           </span>
         )}
       </h3>
@@ -277,7 +317,7 @@ export default function NoteCard({
       </div>
       
       {/* Action buttons */}
-      {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && (
+      {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && !isShared && (
         <div 
           className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100" 
           onClick={(e) => e.stopPropagation()}

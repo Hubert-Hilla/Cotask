@@ -1,4 +1,4 @@
-// components/dashboard/DashboardPage.tsx - FULLY CORRECTED
+// components/dashboard/DashboardPage.tsx - COMPLETE WORKING VERSION
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,12 +13,37 @@ import CreateItemModal from './createItemModal';
 import type { Tables } from "@lib/supabase/types";
 import { Button } from '../ui/button';
 
+// Define types for shared users
+interface SharedUser {
+  id: string;
+  name: string;
+  username: string;
+  avatar_url: string | null;
+  initials: string;
+  permission: 'view' | 'edit' | null;
+}
+
+interface SharedByUser {
+  id: string;
+  name: string;
+  username: string;
+  avatar_url: string | null;
+  initials: string;
+}
+
 // Define types based on your actual database queries
-type ListWithTasks = Tables<'lists'> & {
+type ListWithShares = Tables<'lists'> & {
   tasks?: Tables<'tasks'>[];
+  is_shared?: boolean;
+  shared_by?: SharedByUser;
+  shared_users: SharedUser[];
 };
 
-type NoteFromDB = Tables<'notes'>;
+type NoteWithShares = Tables<'notes'> & {
+  is_shared?: boolean;
+  shared_by?: SharedByUser;
+  shared_users: SharedUser[];
+};
 
 interface DashboardPageProps {
   user: {
@@ -27,19 +52,16 @@ interface DashboardPageProps {
     avatar?: string;
     username: string;
     id: string;
+    initials: string;
   };
-  lists: ListWithTasks[];
-  notes: NoteFromDB[];
-  sharedLists: ListWithTasks[]; 
-  sharedNotes: NoteFromDB[]; 
+  allLists: ListWithShares[];
+  allNotes: NoteWithShares[];
 }
 
 export default function DashboardPage({
   user,
-  lists: initialLists,
-  notes: initialNotes,
-  sharedLists: initialSharedLists,
-  sharedNotes: initialSharedNotes,
+  allLists: initialAllLists,
+  allNotes: initialAllNotes,
 }: DashboardPageProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -58,76 +80,36 @@ export default function DashboardPage({
   const [statsFilter, setStatsFilter] = useState<string | null>(null);
   
   // State for actual data that can be updated
-  const [lists, setLists] = useState<ListWithTasks[]>(initialLists);
-  const [notes, setNotes] = useState<NoteFromDB[]>(initialNotes);
-  
-  // Helper function to safely extract shared lists from any structure
-  const extractSharedLists = (sharedData: any[]): ListWithTasks[] => {
-    if (!sharedData || !Array.isArray(sharedData)) return [];
-    
-    const result: ListWithTasks[] = [];
-    
-    for (const item of sharedData) {
-      if (!item || !item.lists) continue;
-      
-      const lists = item.lists;
-      
-      // If it's an array of lists
-      if (Array.isArray(lists)) {
-        for (const list of lists) {
-          if (list && typeof list === 'object' && list.id && list.title) {
-            result.push(list);
-          }
-        }
-      }
-      // If it's a single list object
-      else if (lists && typeof lists === 'object' && lists.id && lists.title) {
-        result.push(lists);
-      }
-    }
-    
-    return result;
-  };
+  const [allLists, setAllLists] = useState<ListWithShares[]>(initialAllLists);
+  const [allNotes, setAllNotes] = useState<NoteWithShares[]>(initialAllNotes);
 
-  // Helper function to safely extract shared notes from any structure
-  const extractSharedNotes = (sharedData: any[]): NoteFromDB[] => {
-    if (!sharedData || !Array.isArray(sharedData)) return [];
+  // Initialize pinned/archived sets from actual data
+  useEffect(() => {
+    const pinnedListsSet = new Set<string>();
+    const pinnedNotesSet = new Set<string>();
+    const archivedListsSet = new Set<string>();
+    const archivedNotesSet = new Set<string>();
     
-    const result: NoteFromDB[] = [];
+    initialAllLists.forEach(list => {
+      if (list.is_pinned) pinnedListsSet.add(list.id);
+      if (list.is_archived) archivedListsSet.add(list.id);
+    });
     
-    for (const item of sharedData) {
-      if (!item || !item.notes) continue;
-      
-      const notes = item.notes;
-      
-      // If it's an array of notes
-      if (Array.isArray(notes)) {
-        for (const note of notes) {
-          if (note && typeof note === 'object' && note.id && note.title) {
-            result.push(note);
-          }
-        }
-      }
-      // If it's a single note object
-      else if (notes && typeof notes === 'object' && notes.id && notes.title) {
-        result.push(notes);
-      }
-    }
+    initialAllNotes.forEach(note => {
+      if (note.is_pinned) pinnedNotesSet.add(note.id);
+      if (note.is_archived) archivedNotesSet.add(note.id);
+    });
     
-    return result;
-  };
+    setPinnedLists(pinnedListsSet);
+    setPinnedNotes(pinnedNotesSet);
+    setArchivedLists(archivedListsSet);
+    setArchivedNotes(archivedNotesSet);
+  }, [initialAllLists, initialAllNotes]);
 
-  const [sharedLists, setSharedLists] = useState<ListWithTasks[]>(
-    extractSharedLists(initialSharedLists)
-  );
-
-  const [sharedNotes, setSharedNotes] = useState<NoteFromDB[]>(
-    extractSharedNotes(initialSharedNotes)
-  );
-
-  // Calculate stats from database structure
-  const calculateListStats = (listArray: ListWithTasks[]) => {
-    return listArray.reduce((acc, list) => {
+  // Calculate stats from database structure (only for user's own lists)
+  const calculateListStats = (lists: ListWithShares[]) => {
+    const myLists = lists.filter(list => !list.is_shared);
+    return myLists.reduce((acc, list) => {
       const tasks = list.tasks || [];
       const taskCount = tasks.length;
       const completedCount = tasks.filter(task => task.is_completed).length;
@@ -140,7 +122,7 @@ export default function DashboardPage({
     }, { totalTasks: 0, completedTasks: 0, tasksLeft: 0 });
   };
 
-  const stats = calculateListStats(lists);
+  const stats = calculateListStats(allLists);
   const totalTasks = stats.totalTasks;
   const completedTasks = stats.completedTasks;
   const tasksLeft = stats.tasksLeft;
@@ -176,7 +158,11 @@ export default function DashboardPage({
       if (error) throw error;
 
       // Update local state
-      setLists(prev => [newList, ...prev]);
+      setAllLists(prev => [{
+        ...newList,
+        shared_users: [],
+        is_shared: false
+      }, ...prev]);
       
       // Close modal
       setIsCreateModalOpen(false);
@@ -212,7 +198,11 @@ export default function DashboardPage({
       if (error) throw error;
 
       // Update local state
-      setNotes(prev => [newNote, ...prev]);
+      setAllNotes(prev => [{
+        ...newNote,
+        shared_users: [],
+        is_shared: false
+      }, ...prev]);
       
       // Close modal
       setIsCreateModalOpen(false);
@@ -228,47 +218,9 @@ export default function DashboardPage({
   // Function to refresh all data
   const refreshData = async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) return;
-
-      // Fetch updated lists
-      const { data: updatedLists } = await supabase
-        .from("lists")
-        .select('*, tasks(*)')
-        .eq("created_by", currentUser.id);
-      
-      if (updatedLists) setLists(updatedLists);
-
-      // Fetch updated notes
-      const { data: updatedNotes } = await supabase
-        .from("notes")
-        .select('*')
-        .eq('created_by', currentUser.id);
-      
-      if (updatedNotes) setNotes(updatedNotes);
-
-      // Fetch updated shared lists
-      const { data: updatedSharedListsResponse } = await supabase
-        .from("list_shares")
-        .select('lists(*)')
-        .eq('user_id', currentUser.id);
-      
-      if (updatedSharedListsResponse) {
-        const extractedLists = extractSharedLists(updatedSharedListsResponse);
-        setSharedLists(extractedLists);
-      }
-
-      // Fetch updated shared notes
-      const { data: updatedSharedNotesResponse } = await supabase
-        .from("note_shares")
-        .select("notes(*)")
-        .eq("user_id", currentUser.id);
-      
-      if (updatedSharedNotesResponse) {
-        const extractedNotes = extractSharedNotes(updatedSharedNotesResponse);
-        setSharedNotes(extractedNotes);
-      }
-
+      // In a real app, you would refetch all data from the server
+      // For now, we'll just reload the page
+      router.refresh();
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
@@ -317,120 +269,202 @@ export default function DashboardPage({
     setupSubscriptions();
   }, []);
 
-  // Handle pin/archive actions with real database updates
+  // Handle pin/archive actions
   const handlePinList = async (listId: string) => {
     try {
+      const list = allLists.find(l => l.id === listId);
+      if (!list) return;
+      
+      // Don't allow pinning shared lists
+      if (list.is_shared) {
+        alert('You cannot pin lists shared with you');
+        return;
+      }
+      
+      const newPinnedState = !list.is_pinned;
+      
+      setAllLists(prev => prev.map(l => 
+        l.id === listId ? { ...l, is_pinned: newPinnedState } : l
+      ));
+      
       const { error } = await supabase
         .from('lists')
-        .update({ is_pinned: !pinnedLists.has(listId) })
+        .update({ 
+          is_pinned: newPinnedState,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', listId);
 
       if (error) throw error;
-
-      if (pinnedLists.has(listId)) {
-        setPinnedLists(prev => {
-          const newSet = new Set(prev);
+      
+      setPinnedLists(prev => {
+        const newSet = new Set(prev);
+        if (newPinnedState) {
+          newSet.add(listId);
+        } else {
           newSet.delete(listId);
-          return newSet;
-        });
-      } else {
-        setPinnedLists(prev => new Set(prev).add(listId));
-      }
+        }
+        return newSet;
+      });
 
-      await refreshData();
     } catch (error) {
       console.error('Error pinning list:', error);
+      await refreshData();
     }
   };
 
   const handleArchiveList = async (listId: string) => {
     try {
+      const list = allLists.find(l => l.id === listId);
+      if (!list) return;
+      
+      // Don't allow archiving shared lists
+      if (list.is_shared) {
+        alert('You cannot archive lists shared with you');
+        return;
+      }
+      
+      const newArchivedState = !list.is_archived;
+      
+      setAllLists(prev => prev.map(l => 
+        l.id === listId ? { ...l, is_archived: newArchivedState } : l
+      ));
+      
       const { error } = await supabase
         .from('lists')
-        .update({ is_archived: !archivedLists.has(listId) })
+        .update({ 
+          is_archived: newArchivedState,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', listId);
 
       if (error) throw error;
-
-      if (archivedLists.has(listId)) {
-        setArchivedLists(prev => {
-          const newSet = new Set(prev);
+      
+      setArchivedLists(prev => {
+        const newSet = new Set(prev);
+        if (newArchivedState) {
+          newSet.add(listId);
+        } else {
           newSet.delete(listId);
-          return newSet;
-        });
-      } else {
-        setArchivedLists(prev => new Set(prev).add(listId));
-      }
+        }
+        return newSet;
+      });
 
-      await refreshData();
     } catch (error) {
       console.error('Error archiving list:', error);
+      await refreshData();
     }
   };
 
   const handlePinNote = async (noteId: string) => {
     try {
-      const note = notes.find(n => n.id === noteId);
-      if (note && 'is_pinned' in note) {
-        const { error } = await supabase
-          .from('notes')
-          .update({ is_pinned: !pinnedNotes.has(noteId) })
-          .eq('id', noteId);
-
-        if (error) throw error;
+      const note = allNotes.find(n => n.id === noteId);
+      if (!note) return;
+      
+      // Don't allow pinning shared notes
+      if (note.is_shared) {
+        alert('You cannot pin notes shared with you');
+        return;
       }
+      
+      const newPinnedState = !note.is_pinned;
+      
+      setAllNotes(prev => prev.map(n => 
+        n.id === noteId ? { ...n, is_pinned: newPinnedState } : n
+      ));
+      
+      const { error } = await supabase
+        .from('notes')
+        .update({ 
+          is_pinned: newPinnedState,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', noteId);
 
-      if (pinnedNotes.has(noteId)) {
-        setPinnedNotes(prev => {
-          const newSet = new Set(prev);
+      if (error) throw error;
+      
+      setPinnedNotes(prev => {
+        const newSet = new Set(prev);
+        if (newPinnedState) {
+          newSet.add(noteId);
+        } else {
           newSet.delete(noteId);
-          return newSet;
-        });
-      } else {
-        setPinnedNotes(prev => new Set(prev).add(noteId));
-      }
+        }
+        return newSet;
+      });
 
-      await refreshData();
     } catch (error) {
       console.error('Error pinning note:', error);
+      await refreshData();
     }
   };
 
   const handleArchiveNote = async (noteId: string) => {
     try {
-      const note = notes.find(n => n.id === noteId);
-      if (note && 'is_archived' in note) {
-        const { error } = await supabase
-          .from('notes')
-          .update({ is_archived: !archivedNotes.has(noteId) })
-          .eq('id', noteId);
-
-        if (error) throw error;
+      const note = allNotes.find(n => n.id === noteId);
+      if (!note) return;
+      
+      // Don't allow archiving shared notes
+      if (note.is_shared) {
+        alert('You cannot archive notes shared with you');
+        return;
       }
+      
+      const newArchivedState = !note.is_archived;
+      
+      setAllNotes(prev => prev.map(n => 
+        n.id === noteId ? { ...n, is_archived: newArchivedState } : n
+      ));
+      
+      const { error } = await supabase
+        .from('notes')
+        .update({ 
+          is_archived: newArchivedState,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', noteId);
 
-      if (archivedNotes.has(noteId)) {
-        setArchivedNotes(prev => {
-          const newSet = new Set(prev);
+      if (error) throw error;
+      
+      setArchivedNotes(prev => {
+        const newSet = new Set(prev);
+        if (newArchivedState) {
+          newSet.add(noteId);
+        } else {
           newSet.delete(noteId);
-          return newSet;
-        });
-      } else {
-        setArchivedNotes(prev => new Set(prev).add(noteId));
-      }
+        }
+        return newSet;
+      });
 
-      await refreshData();
     } catch (error) {
       console.error('Error archiving note:', error);
+      await refreshData();
     }
   };
 
   const handleBulkArchive = async () => {
     try {
-      for (const listId of selectedItems) {
-        await supabase
-          .from('lists')
-          .update({ is_archived: true })
-          .eq('id', listId);
+      for (const itemId of selectedItems) {
+        const list = allLists.find(l => l.id === itemId);
+        const note = allNotes.find(n => n.id === itemId);
+        
+        if (list && !list.is_shared) {
+          await supabase
+            .from('lists')
+            .update({ 
+              is_archived: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', itemId);
+        } else if (note && !note.is_shared) {
+          await supabase
+            .from('notes')
+            .update({ 
+              is_archived: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', itemId);
+        }
       }
 
       await refreshData();
@@ -451,15 +485,15 @@ export default function DashboardPage({
 
     try {
       for (const itemId of selectedItems) {
-        const isList = lists.some(list => list.id === itemId) || 
-                       sharedLists.some(list => list.id === itemId);
+        const list = allLists.find(l => l.id === itemId);
+        const note = allNotes.find(n => n.id === itemId);
         
-        if (isList) {
+        if (list && !list.is_shared) {
           await supabase
             .from('lists')
             .delete()
             .eq('id', itemId);
-        } else {
+        } else if (note && !note.is_shared) {
           await supabase
             .from('notes')
             .delete()
@@ -493,8 +527,8 @@ export default function DashboardPage({
           completedTasks={completedTasks}
           totalTasks={totalTasks}
           dueToday={3}
-          listsCount={lists.length}
-          notesCount={notes.length}
+          listsCount={allLists.filter(list => !list.is_shared).length}
+          notesCount={allNotes.filter(note => !note.is_shared).length}
           statsFilter={statsFilter}
           onStatsFilter={setStatsFilter}
         />
@@ -522,10 +556,8 @@ export default function DashboardPage({
         </Button>
         
         <ContentSection
-          lists={lists}
-          notes={notes}
-          sharedLists={sharedLists}
-          sharedNotes={sharedNotes}
+          allLists={allLists as any}
+          allNotes={allNotes as any}
           searchQuery={searchQuery}
           filterType={filterType}
           sortBy={sortBy}
@@ -534,8 +566,6 @@ export default function DashboardPage({
           selectedItems={selectedItems}
           pinnedLists={pinnedLists}
           pinnedNotes={pinnedNotes}
-          archivedLists={archivedLists}
-          archivedNotes={archivedNotes}
           onItemSelect={(id) => {
             const newSelected = new Set(selectedItems);
             if (newSelected.has(id)) {
@@ -547,8 +577,6 @@ export default function DashboardPage({
           }}
           onPinList={handlePinList}
           onPinNote={handlePinNote}
-          onArchiveList={handleArchiveList}
-          onArchiveNote={handleArchiveNote}
         />
       </main>
 

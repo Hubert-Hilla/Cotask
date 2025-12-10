@@ -1,7 +1,18 @@
-// components/dashboard/ui/TodoListCard.tsx
+// components/dashboard/ui/TodoListCard.tsx - UPDATED
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import UserAvatars from '@/components/dashboard/ui/usersAvatar';
+
+interface SharedUser {
+  id: string;
+  name: string;
+  username: string;
+  avatar_url: string | null;
+  initials: string;
+  permission: 'view' | 'edit';
+}
 
 interface TodoListCardProps {
   id: string;
@@ -12,11 +23,11 @@ interface TodoListCardProps {
   completedCount: number;
   createdDate: string;
   is_pinned: boolean;
-  is_archived: boolean;
+  is_shared?: boolean;
+  shared_users?: SharedUser[];
   viewMode: 'grid' | 'list';
   onClick?: () => void; // For bulk select mode
   onPin?: () => void;
-  onArchive?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -30,15 +41,17 @@ export default function TodoListCard({
   completedCount,
   createdDate,
   is_pinned,
-  is_archived,
+  is_shared = false,
+  shared_users = [],
   viewMode,
-  onClick, // This is ONLY passed in bulk select mode
+  onClick,
   onPin,
-  onArchive,
   onEdit,
   onDelete,
 }: TodoListCardProps) {
   const router = useRouter();
+  const [showActions, setShowActions] = useState(false);
+  
   const completionPercentage = taskCount > 0 ? (completedCount / taskCount) * 100 : 0;
   
   const colorMap: Record<string, { bg: string; bgLight: string; text: string; progress: string }> = {
@@ -53,11 +66,9 @@ export default function TodoListCard({
   const colorClass = colorMap[color] || colorMap.indigo;
 
   const handleClick = (e: React.MouseEvent) => {
-    // If onClick prop is provided (for bulk select mode), use it
     if (onClick) {
       onClick();
     } else {
-      // Otherwise, navigate to list detail page
       router.push(`/dashboard/lists/${id}`);
     }
   };
@@ -65,24 +76,28 @@ export default function TodoListCard({
   if (viewMode === 'list') {
     return (
       <div 
-        className={`bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer ${is_archived ? 'opacity-60' : ''}`}
+        className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer ${
+          is_shared ? 'border-blue-200' : 'border-gray-200'
+        }`}
         onClick={handleClick}
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4">
           <div className={`w-12 h-12 rounded-lg ${colorClass.bg} flex items-center justify-center`}>
             <span className="text-white text-xl">{icon}</span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-medium truncate">{title}</h3>
-              {is_pinned && (
+              {is_pinned && !is_shared && (
                 <span className="text-amber-500 flex-shrink-0" title="Pinned">
                   📍
                 </span>
               )}
-              {is_archived && (
-                <span className="text-gray-400 text-sm flex-shrink-0" title="Archived">
-                  📦
+              {is_shared && (
+                <span className="text-blue-500 text-sm bg-blue-100 px-2 py-1 rounded" title="Shared with you">
+                  Shared
                 </span>
               )}
             </div>
@@ -90,81 +105,86 @@ export default function TodoListCard({
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
               <span>{taskCount} tasks</span>
               <span>{completedCount} completed</span>
-              <span>{new Date(createdDate).toLocaleDateString()}</span>
+              <span>Created: {new Date(createdDate).toLocaleDateString()}</span>
             </div>
             
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
               <div 
                 className={`h-2 rounded-full ${colorClass.progress}`}
                 style={{ width: `${completionPercentage}%` }}
               />
             </div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-gray-500 mb-2">
               {Math.round(completionPercentage)}% complete
             </div>
+            
+            {/* Shared users avatars */}
+            {shared_users && shared_users.length > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <UserAvatars users={shared_users} size="sm" />
+              </div>
+            )}
           </div>
           
           {/* Action buttons for list view */}
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            {onPin && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPin();
-                }}
-                className={`p-2 rounded-lg ${is_pinned ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                title={is_pinned ? 'Unpin' : 'Pin'}
-              >
-                {is_pinned ? '📍' : '📌'}
-              </button>
-            )}
-            
-            <div className="relative group">
-              <button
-                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
-                title="More actions"
-              >
-                <span className="text-sm">⋯</span>
-              </button>
+          {(showActions || is_pinned) && (onPin || onEdit || onDelete) && !is_shared && (
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {onPin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPin();
+                  }}
+                  className={`p-2 rounded-lg transition-colors ${
+                    is_pinned 
+                      ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title={is_pinned ? 'Unpin' : 'Pin'}
+                >
+                  {is_pinned ? '📍' : '📌'}
+                </button>
+              )}
               
-              {/* Dropdown menu */}
-              <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                {onEdit && (
+              {(onEdit || onDelete) && (
+                <div className="relative group">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit();
-                    }}
-                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                    className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                    title="More actions"
                   >
-                    ✏️ Edit
+                    <span className="text-sm">⋯</span>
                   </button>
-                )}
-                {onArchive && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onArchive();
-                    }}
-                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50"
-                  >
-                    {is_archived ? '📤 Unarchive' : '📦 Archive'}
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete();
-                    }}
-                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 last:rounded-b-lg"
-                  >
-                    🗑️ Delete
-                  </button>
-                )}
-              </div>
+                  
+                  {/* Dropdown menu */}
+                  <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                    {onEdit && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit();
+                        }}
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete();
+                        }}
+                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                      >
+                        🗑️ Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
@@ -173,46 +193,65 @@ export default function TodoListCard({
   // Grid view
   return (
     <div 
-      className={`bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group ${is_archived ? 'opacity-60' : ''}`}
+      className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group ${
+        is_shared ? 'border-blue-200' : 'border-gray-200'
+      }`}
       onClick={handleClick}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
     >
-      {/* Header with icon and actions */}
+      {/* Header with icon, actions, and user avatars */}
       <div className="flex items-start justify-between mb-3">
         <div className={`w-10 h-10 rounded-lg ${colorClass.bg} flex items-center justify-center`}>
           <span className="text-white text-lg">{icon}</span>
         </div>
         
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-          {is_pinned && (
-            <div className="p-1">
-              <span className="text-amber-500" title="Pinned">📍</span>
-            </div>
-          )}
-          {is_archived && (
-            <div className="p-1">
-              <span className="text-gray-400" title="Archived">📦</span>
-            </div>
+        <div className="flex items-center gap-2">
+          {/* Shared users avatars */}
+          {shared_users && shared_users.length > 0 && (
+            <UserAvatars users={shared_users} size="sm" />
           )}
           
-          {onPin && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPin();
-              }}
-              className={`p-1 rounded ${is_pinned ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-gray-600'}`}
-              title={is_pinned ? 'Unpin' : 'Pin'}
-            >
-              {is_pinned ? '📍' : '📌'}
-            </button>
-          )}
+          <div className={`flex items-center gap-1 transition-opacity ${
+            showActions || is_pinned ? 'opacity-100' : 'opacity-0'
+          }`}>
+            {is_pinned && !is_shared && (
+              <div className="p-1">
+                <span className="text-amber-500" title="Pinned">📍</span>
+              </div>
+            )}
+            
+            {onPin && !is_shared && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPin();
+                }}
+                className={`p-1 rounded transition-colors ${
+                  is_pinned 
+                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                }`}
+                title={is_pinned ? 'Unpin' : 'Pin'}
+              >
+                {is_pinned ? '📍' : '📌'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
       
       {/* Title */}
-      <h3 className="font-medium mb-2 truncate">{title}</h3>
+      <h3 className="font-medium mb-2 truncate">
+        {title}
+        {is_shared && (
+          <span className="ml-2 text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
+            Shared
+          </span>
+        )}
+      </h3>
       
-      {/* Stats */}
+      {/* Stats and progress bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">Tasks</span>
@@ -239,42 +278,47 @@ export default function TodoListCard({
         </div>
       </div>
       
-      {/* Action buttons (hidden until hover) */}
-      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-        {onEdit && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-            className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded"
-          >
-            Edit
-          </button>
-        )}
-        {onArchive && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onArchive();
-            }}
-            className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded"
-          >
-            {is_archived ? 'Unarchive' : 'Archive'}
-          </button>
-        )}
-        {onDelete && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="flex-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
-          >
-            Delete
-          </button>
-        )}
-      </div>
+      {/* Action buttons */}
+      {(showActions || is_pinned) && (onPin || onEdit || onDelete) && !is_shared && (
+        <div 
+          className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          {onPin && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPin();
+              }}
+              className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            >
+              {is_pinned ? 'Unpin' : 'Pin'}
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            >
+              Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="flex-1 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
