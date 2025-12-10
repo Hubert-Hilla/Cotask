@@ -1,4 +1,4 @@
-// components/dashboard/ui/TodoListCard.tsx - UPDATED
+// components/dashboard/ui/TodoListCard.tsx - UPDATED with fixes
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -90,11 +90,6 @@ export default function TodoListCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-medium truncate">{title}</h3>
-              {is_pinned && !is_shared && (
-                <span className="text-amber-500 flex-shrink-0" title="Pinned">
-                  📍
-                </span>
-              )}
               {is_shared && (
                 <span className="text-blue-500 text-sm bg-blue-100 px-2 py-1 rounded" title="Shared with you">
                   Shared
@@ -130,6 +125,7 @@ export default function TodoListCard({
           {/* Action buttons for list view */}
           {(showActions || is_pinned) && (onPin || onEdit || onDelete) && !is_shared && (
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {/* Only show pin button in list view */}
               {onPin && (
                 <button
                   onClick={(e) => {
@@ -190,10 +186,10 @@ export default function TodoListCard({
     );
   }
   
-  // Grid view
+  // Grid view - FIXED: consistent height, single pin icon
   return (
     <div 
-      className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group ${
+      className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-64 ${
         is_shared ? 'border-blue-200' : 'border-gray-200'
       }`}
       onClick={handleClick}
@@ -212,32 +208,25 @@ export default function TodoListCard({
             <UserAvatars users={shared_users} size="sm" />
           )}
           
-          <div className={`flex items-center gap-1 transition-opacity ${
-            showActions || is_pinned ? 'opacity-100' : 'opacity-0'
-          }`}>
-            {is_pinned && !is_shared && (
-              <div className="p-1">
-                <span className="text-amber-500" title="Pinned">📍</span>
-              </div>
-            )}
-            
-            {onPin && !is_shared && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPin();
-                }}
-                className={`p-1 rounded transition-colors ${
-                  is_pinned 
-                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                }`}
-                title={is_pinned ? 'Unpin' : 'Pin'}
-              >
-                {is_pinned ? '📍' : '📌'}
-              </button>
-            )}
-          </div>
+          {/* Only ONE pin icon in top right - show pin/unpin button */}
+          {onPin && !is_shared && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPin();
+              }}
+              className={`p-1.5 rounded transition-colors ${
+                showActions || is_pinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              } ${
+                is_pinned 
+                  ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title={is_pinned ? 'Unpin' : 'Pin'}
+            >
+              {is_pinned ? '📍' : '📌'}
+            </button>
+          )}
         </div>
       </div>
       
@@ -251,8 +240,8 @@ export default function TodoListCard({
         )}
       </h3>
       
-      {/* Stats and progress bar */}
-      <div className="space-y-2">
+      {/* Stats and progress bar - fixed layout */}
+      <div className="space-y-2 flex-1">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">Tasks</span>
           <span className={`font-medium ${colorClass.text}`}>
@@ -278,23 +267,12 @@ export default function TodoListCard({
         </div>
       </div>
       
-      {/* Action buttons */}
-      {(showActions || is_pinned) && (onPin || onEdit || onDelete) && !is_shared && (
+      {/* Action buttons at bottom - only show on hover and for non-shared items */}
+      {showActions && (onEdit || onDelete) && !is_shared && (
         <div 
-          className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100" 
+          className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100" 
           onClick={(e) => e.stopPropagation()}
         >
-          {onPin && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPin();
-              }}
-              className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
-            >
-              {is_pinned ? 'Unpin' : 'Pin'}
-            </button>
-          )}
           {onEdit && (
             <button
               onClick={(e) => {

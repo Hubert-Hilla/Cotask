@@ -1,4 +1,4 @@
-// components/dashboard/ui/NoteCard.tsx - UPDATED
+// components/dashboard/ui/NoteCard.tsx - UPDATED with fixes
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -102,11 +102,6 @@ export default function NoteCard({
               <h3 className={`font-medium truncate ${isArchived ? 'text-gray-500' : ''}`}>
                 {title}
               </h3>
-              {isPinned && !isArchived && (
-                <span className="text-amber-500 flex-shrink-0" title="Pinned">
-                  📍
-                </span>
-              )}
               {isArchived && (
                 <span className="text-gray-500 text-sm bg-gray-100 px-2 py-1 rounded" title="Archived">
                   Archived
@@ -143,9 +138,10 @@ export default function NoteCard({
           </div>
           
           {/* Action buttons for list view */}
-          {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && (
+          {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && !isShared && !isArchived && (
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {onPin && !isArchived && !isShared && (
+              {/* Only show pin button in list view */}
+              {onPin && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -162,24 +158,7 @@ export default function NoteCard({
                 </button>
               )}
               
-              {onArchive && !isShared && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onArchive();
-                  }}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isArchived
-                      ? 'bg-green-100 text-green-600 hover:bg-green-200'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title={isArchived ? 'Unarchive' : 'Archive'}
-                >
-                  {isArchived ? '📤' : '📦'}
-                </button>
-              )}
-              
-              {(onEdit || onDelete) && !isShared && (
+              {(onArchive || onEdit || onDelete) && (
                 <div className="relative group">
                   <button
                     className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
@@ -233,10 +212,10 @@ export default function NoteCard({
     );
   }
   
-  // Grid view
+  // Grid view - FIXED: consistent height, single pin icon
   return (
     <div 
-      className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group ${
+      className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-64 ${
         isArchived ? 'border-gray-300 bg-gray-50 opacity-75' : 'border-gray-200'
       }`}
       onClick={handleClick}
@@ -257,32 +236,25 @@ export default function NoteCard({
             <UserAvatars users={sharedUsers} size="sm" />
           )}
           
-          <div className={`flex items-center gap-1 transition-opacity ${
-            showActions || isPinned ? 'opacity-100' : 'opacity-0'
-          }`}>
-            {isPinned && !isArchived && !isShared && (
-              <div className="p-1">
-                <span className="text-amber-500" title="Pinned">📍</span>
-              </div>
-            )}
-            
-            {onPin && !isArchived && !isShared && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPin();
-                }}
-                className={`p-1 rounded transition-colors ${
-                  isPinned 
-                    ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                }`}
-                title={isPinned ? 'Unpin' : 'Pin'}
-              >
-                {isPinned ? '📍' : '📌'}
-              </button>
-            )}
-          </div>
+          {/* Only ONE pin icon in top right - show pin status */}
+          {onPin && !isShared && !isArchived && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPin();
+              }}
+              className={`p-1.5 rounded transition-colors ${
+                showActions || isPinned ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              } ${
+                isPinned 
+                  ? 'bg-amber-100 text-amber-600 hover:bg-amber-200' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title={isPinned ? 'Unpin' : 'Pin'}
+            >
+              {isPinned ? '📍' : '📌'}
+            </button>
+          )}
         </div>
       </div>
       
@@ -301,13 +273,13 @@ export default function NoteCard({
         )}
       </h3>
       
-      {/* Preview content */}
-      <p className={`text-sm mb-3 line-clamp-3 ${isArchived ? 'text-gray-500' : 'text-gray-600'}`}>
+      {/* Preview content - fixed height with line clamp */}
+      <p className={`text-sm mb-3 line-clamp-3 flex-1 ${isArchived ? 'text-gray-500' : 'text-gray-600'}`}>
         {preview}
       </p>
       
       {/* Metadata */}
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-xs mt-auto">
         <span className={isArchived ? 'text-gray-400' : 'text-gray-500'}>
           Edited {new Date(lastEdited).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
@@ -316,23 +288,12 @@ export default function NoteCard({
         </span>
       </div>
       
-      {/* Action buttons */}
-      {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && !isShared && (
+      {/* Action buttons at bottom - only show on hover and for non-shared items */}
+      {showActions && (onArchive || onEdit || onDelete) && !isShared && !isArchived && (
         <div 
-          className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100" 
+          className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100" 
           onClick={(e) => e.stopPropagation()}
         >
-          {onPin && !isArchived && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onPin();
-              }}
-              className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
-            >
-              {isPinned ? 'Unpin' : 'Pin'}
-            </button>
-          )}
           {onArchive && (
             <button
               onClick={(e) => {
@@ -341,7 +302,18 @@ export default function NoteCard({
               }}
               className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
             >
-              {isArchived ? 'Unarchive' : 'Archive'}
+              Archive
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="flex-1 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+            >
+              Edit
             </button>
           )}
           {onDelete && (

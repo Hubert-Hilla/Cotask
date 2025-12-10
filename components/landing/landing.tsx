@@ -3,6 +3,7 @@ import React from "react";
 import PrivacyPolicy from "./privacy";
 import FeaturesCarousel from "../FeaturesCarousel";
 import StartButton, { StartButtonWhite } from "../ui/startButton";
+import Image from "next/image";
 
 
 export default function LandingPageNew() {
@@ -70,11 +71,24 @@ export default function LandingPageNew() {
         </div>
 
         {/* Hero Image */}
-        <div className="mt-20 max-w-6xl mx-auto relative z-10">
-          <div className="rounded-2xl shadow-2xl border-8 border-white overflow-hidden animate-float">
-            <div className="w-full h-96 bg-gradient-to-br from-gray-100 to-gray-200" />
-          </div>
-        </div>
+   <div className="mt-20 relative z-10">
+  <div className="max-w-6xl mx-auto">
+    <div className="rounded-2xl shadow-2xl border-6 border-white overflow-hidden animate-float">
+      <div className="w-full h-[350px] md:h-[450px] lg:h-[550px] relative">
+        <Image
+          src="/hero.png" 
+          alt="CoTask Dashboard Preview"
+          fill
+          className="object-contain"
+          priority
+          sizes="100vw"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+
       </section>
 
       {/* Features Carousel Section */}
@@ -105,7 +119,15 @@ export default function LandingPageNew() {
 
             <div className="relative">
               <div className="rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-                <div className="w-full h-80 bg-gradient-to-br from-gray-100 to-gray-200" />
+                <div className="w-full h-80 relative">
+                  <Image
+                    src="/note.png" // or any image you want
+                    alt="CoTask Simple Interface"
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                </div>
               </div>
             </div>
           </div>
