@@ -1,4 +1,4 @@
-// components/lists/ListDetailView.tsx - WITH PROPER UI MODALS
+// components/lists/ListDetailView.tsx - WITH DARK MODE
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -284,7 +284,8 @@ export default function ListDetailView({
 
       if (error) throw error;
 
-      setTasks(prev => [...prev, data as any]);
+      // Don't update state here - let real-time subscription handle it
+      // This prevents duplicate tasks
       setNewTaskTitle('');
       setSelectedPriority('medium');
       setShowNewTaskInput(false);
@@ -582,8 +583,8 @@ export default function ListDetailView({
     return (
       <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
         userPermission === 'edit' 
-          ? 'bg-green-100 text-green-800' 
-          : 'bg-blue-100 text-blue-800'
+          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
       }`}>
         {userPermission === 'edit' ? 'Can Edit' : 'View Only'}
       </span>
@@ -591,15 +592,15 @@ export default function ListDetailView({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
               >
                 ← Back
               </button>
@@ -617,13 +618,13 @@ export default function ListDetailView({
                       }
                     }}
                     placeholder="List title..."
-                    className="text-xl font-semibold bg-transparent border-none outline-none"
+                    className="text-xl font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-white"
                     readOnly={!isOwner}
                   />
                   {renderPermissionBadge()}
-                  {isPinned && <span className="text-amber-500" title="Pinned">📍</span>}
+                  {isPinned && <span className="text-amber-500 dark:text-amber-400" title="Pinned">📍</span>}
                 </div>
-                <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
                   <span>Created by {list.owner.name} • {activeTasks.length} active, {completedCount} completed</span>
                   {lastSaved && isOwner && <span>Last saved: {lastSaved}</span>}
                 </div>
@@ -638,11 +639,11 @@ export default function ListDetailView({
                       }
                     }}
                     placeholder="Add description..."
-                    className="text-sm text-gray-600 bg-transparent border-none outline-none w-full mt-1"
+                    className="text-sm text-gray-600 dark:text-gray-300 bg-transparent border-none outline-none w-full mt-1"
                   />
                 )}
                 {!isOwner && listDescription && (
-                  <p className="text-sm text-gray-600 mt-1">{listDescription}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{listDescription}</p>
                 )}
               </div>
             </div>
@@ -652,7 +653,11 @@ export default function ListDetailView({
                 <>
                   <button
                     onClick={handleTogglePin}
-                    className={`p-2 rounded-lg ${isPinned ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    className={`p-2 rounded-lg ${
+                      isPinned 
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
                     title={isPinned ? 'Unpin' : 'Pin'}
                   >
                     {isPinned ? '📍' : '📌'}
@@ -660,7 +665,7 @@ export default function ListDetailView({
                   
                   <button
                     onClick={() => setIsSharing(true)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                    className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center gap-2"
                   >
                     <span>🔗</span>
                     Share
@@ -669,14 +674,14 @@ export default function ListDetailView({
               )}
               
               <div className="relative group">
-                <button className="p-2 rounded-lg hover:bg-gray-100">
+                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white">
                   ⋯
                 </button>
-                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                   {!isOwner && (
                     <button
                       onClick={() => setLeaveListModal(true)}
-                      className="w-full px-4 py-2 text-left text-orange-600 hover:bg-orange-50 rounded-t-lg"
+                      className="w-full px-4 py-2 text-left text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-t-lg"
                     >
                       🚪 Leave List
                     </button>
@@ -684,7 +689,7 @@ export default function ListDetailView({
                   {isOwner && (
                     <button
                       onClick={() => setDeleteListModal(true)}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg"
+                      className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                     >
                       🗑️ Delete List
                     </button>
@@ -698,20 +703,20 @@ export default function ListDetailView({
 
       {/* Delete Task Modal */}
       {deleteTaskModal.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Task</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to delete this task? This action cannot be undone.</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Task</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this task? This action cannot be undone.</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteTaskModal({ show: false, taskId: null })}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={() => deleteTaskModal.taskId && handleDeleteTask(deleteTaskModal.taskId)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600"
               >
                 Delete
               </button>
@@ -722,14 +727,14 @@ export default function ListDetailView({
 
       {/* Edit Task Modal */}
       {editTaskModal.show && editTaskModal.task && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Task</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Edit Task</h3>
             <input
               type="text"
               value={editTaskTitle}
               onChange={(e) => setEditTaskTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent"
               placeholder="Task title..."
               autoFocus
             />
@@ -739,7 +744,7 @@ export default function ListDetailView({
                   setEditTaskModal({ show: false, task: null });
                   setEditTaskTitle('');
                 }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -751,7 +756,7 @@ export default function ListDetailView({
                     setEditTaskTitle('');
                   }
                 }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
               >
                 Save
               </button>
@@ -762,20 +767,20 @@ export default function ListDetailView({
 
       {/* Delete List Modal */}
       {deleteListModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete List</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to delete this list? All tasks will be permanently deleted. This action cannot be undone.</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete List</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this list? All tasks will be permanently deleted. This action cannot be undone.</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteListModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteList}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600"
               >
                 Delete List
               </button>
@@ -786,20 +791,20 @@ export default function ListDetailView({
 
       {/* Leave List Modal */}
       {leaveListModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Leave List</h3>
-            <p className="text-gray-600 mb-6">Are you sure you want to leave this list? You will lose access and need to be re-invited to view it again.</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Leave List</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to leave this list? You will lose access and need to be re-invited to view it again.</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setLeaveListModal(false)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRemoveSelf}
-                className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                className="px-4 py-2 bg-orange-600 dark:bg-orange-500 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600"
               >
                 Leave List
               </button>
@@ -808,14 +813,14 @@ export default function ListDetailView({
         </div>
       )}
 
-      {/* Share Modal */}
+      {/* Share Modal - I'll continue with this in the next part due to length... */}
       {isSharing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Share "{listTitle}"</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Share "{listTitle}"</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Invite contacts to collaborate on this list
                 </p>
               </div>
@@ -826,7 +831,7 @@ export default function ListDetailView({
                   setSharePermission('view');
                   setShareError('');
                 }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
               >
                 <span className="text-2xl">×</span>
               </button>
@@ -835,12 +840,12 @@ export default function ListDetailView({
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Invite by Username
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
                         @
                       </span>
                       <input
@@ -848,7 +853,7 @@ export default function ListDetailView({
                         value={shareUsername}
                         onChange={(e) => setShareUsername(e.target.value)}
                         placeholder="username"
-                        className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition-all"
+                        className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:border-[#4F46E5] dark:focus:border-indigo-400 focus:ring-2 focus:ring-[#4F46E5]/20 dark:focus:ring-indigo-400/20 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleShareList();
                         }}
@@ -859,12 +864,12 @@ export default function ListDetailView({
                       <select
                         value={sharePermission}
                         onChange={(e) => setSharePermission(e.target.value as 'view' | 'edit')}
-                        className="appearance-none px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition-all pr-10 cursor-pointer"
+                        className="appearance-none px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:border-[#4F46E5] dark:focus:border-indigo-400 focus:ring-2 focus:ring-[#4F46E5]/20 dark:focus:ring-indigo-400/20 transition-all pr-10 cursor-pointer"
                       >
                         <option value="edit">Can edit</option>
                         <option value="view">Can view</option>
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -880,20 +885,20 @@ export default function ListDetailView({
                     </button>
                   </div>
                   {shareError && (
-                    <p className="text-sm text-red-600">{shareError}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{shareError}</p>
                   )}
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     You can only share with users who have a CoTask account
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     People with access ({sharedUsers.length + 1})
                   </label>
                   
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] flex items-center justify-center">
                           <span className="text-white font-medium text-sm">
@@ -901,15 +906,15 @@ export default function ListDetailView({
                           </span>
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 dark:text-white">
                             {list.owner.name} (You)
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             @{list.owner.username}
                           </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                      <span className="px-3 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-full">
                         Owner
                       </span>
                     </div>
@@ -917,7 +922,7 @@ export default function ListDetailView({
                     {sharedUsers.map((share) => (
                       <div 
                         key={share.id}
-                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors group"
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
@@ -926,10 +931,10 @@ export default function ListDetailView({
                             </span>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 dark:text-white">
                               {share.user?.name || share.user?.username || 'Unknown User'}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                               @{share.user?.username || 'unknown'}
                             </div>
                           </div>
@@ -940,12 +945,12 @@ export default function ListDetailView({
                             <select
                               value={share.permission}
                               onChange={(e) => handleUpdateSharePermission(share.id, e.target.value as 'view' | 'edit')}
-                              className="appearance-none px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]/20 transition-all pr-8 cursor-pointer"
+                              className="appearance-none px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:border-[#4F46E5] dark:focus:border-indigo-400 focus:ring-1 focus:ring-[#4F46E5]/20 dark:focus:ring-indigo-400/20 transition-all pr-8 cursor-pointer"
                             >
                               <option value="view">Can view</option>
                               <option value="edit">Can edit</option>
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
@@ -954,7 +959,7 @@ export default function ListDetailView({
                           
                           <button
                             onClick={() => handleRemoveShare(share.id)}
-                            className="p-2 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                             title="Remove"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -967,13 +972,13 @@ export default function ListDetailView({
 
                     {sharedUsers.length === 0 && (
                       <div className="text-center py-8">
-                        <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                          <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 5.197a4 4 0 00-5.197-5.197" />
                           </svg>
                         </div>
-                        <p className="text-gray-500">No collaborators yet</p>
-                        <p className="text-sm text-gray-400 mt-1">Invite someone to collaborate</p>
+                        <p className="text-gray-500 dark:text-gray-400">No collaborators yet</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Invite someone to collaborate</p>
                       </div>
                     )}
                   </div>
@@ -981,7 +986,7 @@ export default function ListDetailView({
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
               <div className="flex justify-end">
                 <button
                   onClick={() => {
@@ -990,7 +995,7 @@ export default function ListDetailView({
                     setSharePermission('view');
                     setShareError('');
                   }}
-                  className="px-6 py-2.5 bg-white text-gray-700 font-medium rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   Done
                 </button>
@@ -1006,19 +1011,31 @@ export default function ListDetailView({
         <div className="flex gap-4 mb-6">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg ${
+              filter === 'all' 
+                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
           >
             All ({totalCount})
           </button>
           <button
             onClick={() => setFilter('active')}
-            className={`px-4 py-2 rounded-lg ${filter === 'active' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg ${
+              filter === 'active' 
+                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
           >
             Active ({activeTasks.length})
           </button>
           <button
             onClick={() => setFilter('completed')}
-            className={`px-4 py-2 rounded-lg ${filter === 'completed' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg ${
+              filter === 'completed' 
+                ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
           >
             Completed ({completedCount})
           </button>
@@ -1026,11 +1043,11 @@ export default function ListDetailView({
 
         {/* Add Task Section */}
         {canEdit() && (
-          <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
+          <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
             {!showNewTaskInput ? (
               <button
                 onClick={() => setShowNewTaskInput(true)}
-                className="w-full text-left text-gray-500 hover:text-gray-700 flex items-center gap-2"
+                className="w-full text-left text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-2"
               >
                 <span>+</span>
                 Add a new task...
@@ -1046,7 +1063,7 @@ export default function ListDetailView({
                     if (e.key === 'Enter') handleAddTask();
                     if (e.key === 'Escape') setShowNewTaskInput(false);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md"
                   autoFocus
                 />
                 
@@ -1054,7 +1071,7 @@ export default function ListDetailView({
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md"
+                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md"
                   >
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
@@ -1065,13 +1082,13 @@ export default function ListDetailView({
 
                   <button
                     onClick={() => setShowNewTaskInput(false)}
-                    className="px-3 py-2 text-gray-600 hover:text-gray-800"
+                    className="px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAddTask}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
                   >
                     Add Task
                   </button>
@@ -1084,12 +1101,12 @@ export default function ListDetailView({
         {/* Task List */}
         <div className="space-y-3">
           {filteredTasks.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border-2 border-dashed border-gray-300">
-              <div className="w-16 h-16 rounded-full bg-gray-100 mx-auto mb-4 flex items-center justify-center">
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+              <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mx-auto mb-4 flex items-center justify-center">
                 <span className="text-2xl">📝</span>
               </div>
-              <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
-              <p className="text-gray-500">
+              <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">No tasks yet</h3>
+              <p className="text-gray-500 dark:text-gray-400">
                 {canEdit() ? 'Add your first task to get started' : 'No tasks in this list'}
               </p>
             </div>
@@ -1097,7 +1114,7 @@ export default function ListDetailView({
             filteredTasks.map((task) => (
               <div
                 key={task.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-start gap-3">
                   <button
@@ -1105,8 +1122,8 @@ export default function ListDetailView({
                     disabled={!canEdit()}
                     className={`w-6 h-6 rounded-full border-2 flex-shrink-0 mt-1 ${
                       task.is_completed
-                        ? 'bg-green-500 border-green-500'
-                        : 'border-gray-300'
+                        ? 'bg-green-500 dark:bg-green-600 border-green-500 dark:border-green-600'
+                        : 'border-gray-300 dark:border-gray-600'
                     } ${!canEdit() ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                   >
                     {task.is_completed && (
@@ -1116,25 +1133,31 @@ export default function ListDetailView({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className={`font-medium ${task.is_completed ? 'line-through text-gray-500' : ''}`}>
+                      <h3 className={`font-medium ${
+                        task.is_completed 
+                          ? 'line-through text-gray-500 dark:text-gray-400' 
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
                         {task.title}
                       </h3>
                       <span className={`text-xs px-2 py-1 rounded ${
-                        task.priority === 'high' ? 'bg-red-100 text-red-700' :
-                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-green-100 text-green-700'
+                        task.priority === 'high' 
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                        task.priority === 'medium' 
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                       }`}>
                         {task.priority}
                       </span>
                     </div>
                     
                     {task.description && (
-                      <p className="text-gray-600 text-sm mb-2">
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-2">
                         {task.description}
                       </p>
                     )}
                     
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       Created {new Date(task.created_at).toLocaleDateString()}
                       {task.completed_at && (
                         <span> • Completed {new Date(task.completed_at).toLocaleDateString()}</span>
@@ -1149,14 +1172,14 @@ export default function ListDetailView({
                           setEditTaskModal({ show: true, task });
                           setEditTaskTitle(task.title);
                         }}
-                        className="p-2 text-gray-400 hover:text-blue-500"
+                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400"
                         title="Edit task"
                       >
                         ✏️
                       </button>
                       <button
                         onClick={() => setDeleteTaskModal({ show: true, taskId: task.id })}
-                        className="p-2 text-gray-400 hover:text-red-500"
+                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400"
                         title="Delete task"
                       >
                         🗑️

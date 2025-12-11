@@ -1,4 +1,4 @@
-// components/dashboard/DashboardPage.tsx - WITH REAL-TIME UPDATES
+// components/dashboard/DashboardPage.tsx - WITH REAL-TIME UPDATES AND DARK MODE
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -609,7 +609,7 @@ export default function DashboardPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader
         user={user}
         onLogout={handleLogout}
@@ -644,9 +644,9 @@ export default function DashboardPage({
           selectedItems={selectedItems}
           onBulkDelete={handleBulkDelete}
         />
-
+        
         <Button onClick={() => setIsCreateModalOpen(true)}>
-          Create New Item 
+          Create New Item
         </Button>
         
         <ContentSection

@@ -1,4 +1,4 @@
-// components/dashboard/modals/CreateItemModal.tsx
+// components/dashboard/modals/CreateItemModal.tsx - WITH DARK MODE
 'use client';
 
 import { useState } from 'react';
@@ -98,19 +98,19 @@ export default function CreateItemModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-25" onClick={handleClose} />
+      <div className="fixed inset-0 bg-black bg-opacity-25 dark:bg-opacity-50" onClick={handleClose} />
 
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Create New {mode === 'list' ? 'List' : 'Note'}
                 </h2>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                   {mode === 'list' 
                     ? 'Set up a new task list with custom icon and color'
                     : 'Create a new note to capture your thoughts'}
@@ -118,7 +118,7 @@ export default function CreateItemModal({
               </div>
               <button
                 onClick={handleClose}
-                className="text-gray-400 hover:text-gray-500"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400"
               >
                 <span className="sr-only">Close</span>
                 <span className="text-2xl">×</span>
@@ -132,8 +132,8 @@ export default function CreateItemModal({
                 onClick={() => setMode('list')}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   mode === 'list'
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 📋 Create List
@@ -143,8 +143,8 @@ export default function CreateItemModal({
                 onClick={() => setMode('note')}
                 className={`px-4 py-2 rounded-lg transition-colors ${
                   mode === 'note'
-                    ? 'bg-indigo-100 text-indigo-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 📝 Create Note
@@ -155,7 +155,7 @@ export default function CreateItemModal({
           {/* Form */}
           <form onSubmit={handleSubmit} className="px-6 py-4 space-y-6">
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {mode === 'list' ? 'List Title' : 'Note Title'}
               </label>
               <input
@@ -167,7 +167,7 @@ export default function CreateItemModal({
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 required
                 autoFocus
               />
@@ -177,7 +177,7 @@ export default function CreateItemModal({
               <>
                 {/* Icon Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Choose an Icon
                   </label>
                   <div className="grid grid-cols-5 gap-2">
@@ -189,8 +189,8 @@ export default function CreateItemModal({
                         className={`
                           p-3 rounded-lg border-2 transition-all hover:scale-105
                           ${selectedIcon === value 
-                            ? 'border-indigo-600 bg-indigo-50' 
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' 
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                           }
                         `}
                       >
@@ -202,7 +202,7 @@ export default function CreateItemModal({
 
                 {/* Color Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Choose a Color
                   </label>
                   <div className="grid grid-cols-6 gap-2">
@@ -214,13 +214,13 @@ export default function CreateItemModal({
                         className={`
                           p-2 rounded-lg border-2 transition-all hover:scale-105
                           ${selectedColor === value 
-                            ? 'border-gray-900' 
+                            ? 'border-gray-900 dark:border-gray-100' 
                             : 'border-transparent'
                           }
                         `}
                       >
                         <div className={`w-full h-8 rounded ${bg}`} />
-                        <div className="text-xs mt-1 text-gray-600">{name}</div>
+                        <div className="text-xs mt-1 text-gray-600 dark:text-gray-400">{name}</div>
                       </button>
                     ))}
                   </div>
@@ -229,17 +229,17 @@ export default function CreateItemModal({
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
+            <div className="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!title.trim()}
               >
                 Create {mode === 'list' ? 'List' : 'Note'}

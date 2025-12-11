@@ -1,4 +1,4 @@
-// components/dashboard/layout/DashboardHeader.tsx
+// components/dashboard/layout/DashboardHeader.tsx - WITH DARK MODE
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -88,29 +88,29 @@ export default function DashboardHeader({ user, onLogout }: DashboardHeaderProps
   };
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <span className="text-2xl font-semibold">Cotask</span>
+            <span className="text-2xl font-semibold text-gray-900 dark:text-white">Cotask</span>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={handleContactsClick}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors relative"
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors relative text-gray-700 dark:text-gray-200"
             >
               <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 5.197a4 4 0 00-5.197-5.197" />
               </svg>
               Contacts
               {pendingRequestsCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 text-white rounded-full text-xs flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 dark:bg-yellow-600 text-white rounded-full text-xs flex items-center justify-center">
                   {pendingRequestsCount}
                 </span>
               )}
@@ -122,10 +122,10 @@ export default function DashboardHeader({ user, onLogout }: DashboardHeaderProps
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity"
               >
                 <div className="text-right hidden md:block">
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-sm text-gray-500">@{user.username}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{user.name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</div>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-medium">
+                <div className="w-10 h-10 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center font-medium">
                   {user.avatar ? (
                     <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
                   ) : (
@@ -136,13 +136,13 @@ export default function DashboardHeader({ user, onLogout }: DashboardHeaderProps
               
               {/* Dropdown menu */}
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                   <button 
                     onClick={() => {
                       router.push('/dashboard/profile');
                       setShowDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                    className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg"
                   >
                     Profile
                   </button>
@@ -151,7 +151,7 @@ export default function DashboardHeader({ user, onLogout }: DashboardHeaderProps
                       onLogout();
                       setShowDropdown(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-50 last:rounded-b-lg"
+                    className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 last:rounded-b-lg"
                   >
                     Logout
                   </button>
