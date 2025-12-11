@@ -58,6 +58,9 @@ export default function NoteEditor({
   
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isEditingRef = useRef(false);
+  const lastSavedContentRef = useRef(initialContent);
+  const lastSavedTitleRef = useRef(initialTitle);
 
   // Load shared users if owner
   useEffect(() => {
@@ -72,7 +75,7 @@ export default function NoteEditor({
         .from('note_shares')
         .select(`
           *,
-          user:profiles!note_shares_user_id_fkey(id, name, username)
+          user:profiles!note_shares_user_id_fkey(id, name, username, avatar_url)
         `)
         .eq('note_id', noteId);
 
@@ -326,6 +329,7 @@ export default function NoteEditor({
     if (!editorRef.current || !canEdit()) return;
     const newContent = editorRef.current.innerHTML;
     setContent(newContent);
+    isEditingRef.current = true;
   };
 
   // Handle editor events
@@ -390,6 +394,8 @@ export default function NoteEditor({
     if (!canEdit()) return;
     
     try {
+      setIsSaving(true);
+      
       const { error } = await supabase
         .from('notes')
         .update({
@@ -401,10 +407,21 @@ export default function NoteEditor({
 
       if (error) throw error;
 
+      // Update the last saved refs
+      lastSavedContentRef.current = content;
+      lastSavedTitleRef.current = title;
+      
       setLastSaved(new Date().toLocaleTimeString());
       console.log('Note saved successfully');
+      
+      // Mark editing as false after save completes
+      setTimeout(() => {
+        isEditingRef.current = false;
+      }, 100);
     } catch (error) {
       console.error('Error saving note:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -417,10 +434,10 @@ export default function NoteEditor({
     }
 
     saveTimeoutRef.current = setTimeout(() => {
-      if (title !== initialTitle || content !== initialContent) {
+      if (title !== lastSavedTitleRef.current || content !== lastSavedContentRef.current) {
         saveNote();
       }
-    }, 500); // Faster auto-save: 500ms
+    }, 1000); // Save after 1 second of inactivity
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -442,17 +459,28 @@ export default function NoteEditor({
           filter: `id=eq.${noteId}`,
         },
         (payload) => {
-          console.log('Note updated:', payload);
+          console.log('Note updated from server:', payload);
           const newNote = payload.new as any;
           
-          // Only update if the change came from another user
-          if (newNote.title !== title || newNote.content !== content) {
-            setTitle(newNote.title);
-            setContent(newNote.content);
-            if (editorRef.current && newNote.content !== editorRef.current.innerHTML) {
-              editorRef.current.innerHTML = newNote.content;
+          // Only update if the user is not actively editing
+          // AND the content is different from what we have locally
+          if (!isEditingRef.current) {
+            if (newNote.title !== title && newNote.title !== lastSavedTitleRef.current) {
+              setTitle(newNote.title);
+              lastSavedTitleRef.current = newNote.title;
             }
-            setIsPinned(newNote.is_pinned || false);
+            
+            if (newNote.content !== content && newNote.content !== lastSavedContentRef.current) {
+              setContent(newNote.content);
+              lastSavedContentRef.current = newNote.content;
+              if (editorRef.current) {
+                editorRef.current.innerHTML = newNote.content;
+              }
+            }
+            
+            if (newNote.is_pinned !== undefined) {
+              setIsPinned(newNote.is_pinned || false);
+            }
           }
         }
       )
@@ -475,7 +503,7 @@ export default function NoteEditor({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [noteId, title, content]);
+  }, [noteId]);
 
   // Real-time subscription for note shares
   useEffect(() => {
@@ -568,8 +596,6 @@ export default function NoteEditor({
         .eq('id', noteId);
 
       if (error) throw error;
-
-      saveNote();
     } catch (error) {
       console.error('Error toggling pin:', error);
       setIsPinned(!isPinned);
@@ -727,6 +753,14 @@ export default function NoteEditor({
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
   const renderPermissionBadge = () => {
     if (userPermission === 'owner') return null;
     
@@ -759,13 +793,19 @@ export default function NoteEditor({
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    isEditingRef.current = true;
+                  }}
                   placeholder="Note title..."
                   className="text-xl font-semibold bg-transparent border-none outline-none w-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   readOnly={!canEdit()}
                 />
                 <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                  {lastSaved && (
+                  {isSaving && (
+                    <span className="text-indigo-600 dark:text-indigo-400">Saving...</span>
+                  )}
+                  {!isSaving && lastSaved && (
                     <span>Last saved: {lastSaved}</span>
                   )}
                   {renderPermissionBadge()}
@@ -940,10 +980,18 @@ export default function NoteEditor({
                         className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
-                            <span className="text-white font-medium text-sm">
-                              {share.user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
-                            </span>
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center overflow-hidden">
+                            {(share.user as any)?.avatar_url ? (
+                              <img 
+                                src={(share.user as any).avatar_url} 
+                                alt={share.user?.name || 'User'} 
+                                className="w-full h-full object-cover" 
+                              />
+                            ) : (
+                              <span className="text-white font-medium text-sm">
+                                {getInitials(share.user?.name || 'U')}
+                              </span>
+                            )}
                           </div>
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">
