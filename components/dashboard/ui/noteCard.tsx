@@ -1,4 +1,4 @@
-// components/dashboard/ui/NoteCard.tsx - UPDATED with fixes
+// components/dashboard/ui/NoteCard.tsx - WITH HTML PREVIEW
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -32,19 +32,18 @@ interface NoteCardProps {
   onDelete?: () => void;
 }
 
-// Helper function to safely strip HTML tags for preview
+// Helper function to safely strip HTML tags for plain text preview
 const stripHtml = (html: string): string => {
   if (typeof document !== 'undefined') {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
     return tempDiv.textContent || tempDiv.innerText || '';
   }
-  // Fallback for server-side: remove HTML tags with regex (not perfect but works for preview)
   return html.replace(/<[^>]*>/g, '');
 };
 
-// Helper to create preview text
-const createPreview = (content: string, maxLength: number = 100): string => {
+// Helper to create plain text preview
+const createPlainPreview = (content: string, maxLength: number = 150): string => {
   const plainText = stripHtml(content);
   return plainText.length > maxLength 
     ? plainText.substring(0, maxLength) + '...' 
@@ -71,7 +70,7 @@ export default function NoteCard({
   const router = useRouter();
   const [showActions, setShowActions] = useState(false);
   
-  const preview = createPreview(content);
+  const plainPreview = createPlainPreview(content);
   
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {
@@ -117,7 +116,7 @@ export default function NoteCard({
             <p className={`text-sm mb-2 line-clamp-2 ${
               isArchived ? 'text-gray-500' : 'text-gray-600'
             }`}>
-              {preview}
+              {plainPreview}
             </p>
             
             <div className="flex items-center justify-between text-sm">
@@ -130,17 +129,14 @@ export default function NoteCard({
                 </span>
               </div>
               
-              {/* Shared users avatars */}
               {sharedUsers && sharedUsers.length > 0 && (
                 <UserAvatars users={sharedUsers} size="sm" />
               )}
             </div>
           </div>
           
-          {/* Action buttons for list view */}
           {(showActions || isPinned) && (onPin || onArchive || onEdit || onDelete) && !isShared && !isArchived && (
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {/* Only show pin button in list view */}
               {onPin && (
                 <button
                   onClick={(e) => {
@@ -167,7 +163,6 @@ export default function NoteCard({
                     <span className="text-sm">⋯</span>
                   </button>
                   
-                  {/* Dropdown menu */}
                   <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                     {onEdit && (
                       <button
@@ -212,10 +207,10 @@ export default function NoteCard({
     );
   }
   
-  // Grid view - FIXED: consistent height, single pin icon
+  // Grid view - WITH HTML PREVIEW
   return (
     <div 
-      className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-64 ${
+      className={`bg-white rounded-lg border hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-64 overflow-hidden ${
         isArchived ? 'border-gray-300 bg-gray-50 opacity-75' : 'border-gray-200'
       }`}
       onClick={handleClick}
@@ -223,7 +218,7 @@ export default function NoteCard({
       onMouseLeave={() => setShowActions(false)}
     >
       {/* Header with icon, actions, and user avatars */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between p-4 pb-2">
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
           isArchived ? 'bg-gray-200' : 'bg-gray-100'
         }`}>
@@ -231,12 +226,10 @@ export default function NoteCard({
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Shared users avatars */}
           {sharedUsers && sharedUsers.length > 0 && (
             <UserAvatars users={sharedUsers} size="sm" />
           )}
           
-          {/* Only ONE pin icon in top right - show pin status */}
           {onPin && !isShared && !isArchived && (
             <button
               onClick={(e) => {
@@ -259,27 +252,48 @@ export default function NoteCard({
       </div>
       
       {/* Title */}
-      <h3 className={`font-medium mb-2 truncate ${isArchived ? 'text-gray-500' : ''}`}>
-        {title}
-        {isArchived && (
-          <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-            Archived
-          </span>
-        )}
-        {isShared && (
-          <span className="ml-2 text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
-            Shared
-          </span>
-        )}
-      </h3>
+      <div className="px-4 pb-2">
+        <h3 className={`font-medium truncate ${isArchived ? 'text-gray-500' : ''}`}>
+          {title}
+          {isArchived && (
+            <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              Archived
+            </span>
+          )}
+          {isShared && (
+            <span className="ml-2 text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded">
+              Shared
+            </span>
+          )}
+        </h3>
+      </div>
       
-      {/* Preview content - fixed height with line clamp */}
-      <p className={`text-sm mb-3 line-clamp-3 flex-1 ${isArchived ? 'text-gray-500' : 'text-gray-600'}`}>
-        {preview}
-      </p>
+      {/* HTML Preview - Mini screenshot style */}
+      <div className="flex-1 px-4 overflow-hidden relative">
+        {/* Render actual HTML content with scaled-down styling */}
+        <div 
+          className={`text-xs leading-relaxed overflow-hidden ${
+            isArchived ? 'text-gray-500' : 'text-gray-700'
+          }
+          [&>h1]:text-sm [&>h1]:font-semibold [&>h1]:mt-2 [&>h1]:mb-1
+          [&>h2]:text-xs [&>h2]:font-semibold [&>h2]:mt-1.5 [&>h2]:mb-1
+          [&>p]:my-1 [&>p]:leading-snug
+          [&>ul]:list-disc [&>ul]:ml-4 [&>ul]:my-1
+          [&>ol]:list-decimal [&>ol]:ml-4 [&>ol]:my-1
+          [&>li]:my-0.5
+          [&>strong]:font-semibold
+          [&>em]:italic
+          [&_div[data-todo]]:flex [&_div[data-todo]]:items-center [&_div[data-todo]]:gap-1 [&_div[data-todo]]:my-1 [&_div[data-todo]]:text-xs
+          `}
+          dangerouslySetInnerHTML={{ __html: content || '<p class="text-gray-400">Empty note...</p>' }}
+        />
+        
+        {/* Fade out gradient at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+      </div>
       
       {/* Metadata */}
-      <div className="flex items-center justify-between text-xs mt-auto">
+      <div className="flex items-center justify-between text-xs px-4 py-2 border-t border-gray-100 mt-auto bg-white">
         <span className={isArchived ? 'text-gray-400' : 'text-gray-500'}>
           Edited {new Date(lastEdited).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
@@ -288,10 +302,10 @@ export default function NoteCard({
         </span>
       </div>
       
-      {/* Action buttons at bottom - only show on hover and for non-shared items */}
+      {/* Action buttons - show on hover */}
       {showActions && (onArchive || onEdit || onDelete) && !isShared && !isArchived && (
         <div 
-          className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100" 
+          className="flex items-center gap-2 px-4 pb-3 bg-white border-t border-gray-100" 
           onClick={(e) => e.stopPropagation()}
         >
           {onArchive && (

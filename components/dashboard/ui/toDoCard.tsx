@@ -1,4 +1,4 @@
-// components/dashboard/ui/TodoListCard.tsx - UPDATED with fixes
+// components/dashboard/ui/TodoListCard.tsx - WITH UPDATED DATE FORMAT
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -22,11 +22,12 @@ interface TodoListCardProps {
   taskCount: number;
   completedCount: number;
   createdDate: string;
+  updatedDate?: string;
   is_pinned: boolean;
   is_shared?: boolean;
   shared_users?: SharedUser[];
   viewMode: 'grid' | 'list';
-  onClick?: () => void; // For bulk select mode
+  onClick?: () => void;
   onPin?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -40,6 +41,7 @@ export default function TodoListCard({
   taskCount,
   completedCount,
   createdDate,
+  updatedDate,
   is_pinned,
   is_shared = false,
   shared_users = [],
@@ -100,7 +102,6 @@ export default function TodoListCard({
             <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
               <span>{taskCount} tasks</span>
               <span>{completedCount} completed</span>
-              <span>Created: {new Date(createdDate).toLocaleDateString()}</span>
             </div>
             
             {/* Progress bar */}
@@ -110,8 +111,20 @@ export default function TodoListCard({
                 style={{ width: `${completionPercentage}%` }}
               />
             </div>
-            <div className="text-xs text-gray-500 mb-2">
-              {Math.round(completionPercentage)}% complete
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-500">
+                {Math.round(completionPercentage)}% complete
+              </span>
+              <div className="flex items-center gap-4 text-sm">
+                {updatedDate && (
+                  <span className="text-gray-500">
+                    Edited: {new Date(updatedDate).toLocaleDateString()}
+                  </span>
+                )}
+                <span className="text-gray-500">
+                  Created: {new Date(createdDate).toLocaleDateString()}
+                </span>
+              </div>
             </div>
             
             {/* Shared users avatars */}
@@ -125,7 +138,6 @@ export default function TodoListCard({
           {/* Action buttons for list view */}
           {(showActions || is_pinned) && (onPin || onEdit || onDelete) && !is_shared && (
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {/* Only show pin button in list view */}
               {onPin && (
                 <button
                   onClick={(e) => {
@@ -152,7 +164,6 @@ export default function TodoListCard({
                     <span className="text-sm">⋯</span>
                   </button>
                   
-                  {/* Dropdown menu */}
                   <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                     {onEdit && (
                       <button
@@ -186,7 +197,7 @@ export default function TodoListCard({
     );
   }
   
-  // Grid view - FIXED: consistent height, single pin icon
+  // Grid view - with Edited/Created dates like NoteCard
   return (
     <div 
       className={`bg-white rounded-lg p-4 border hover:shadow-md transition-shadow cursor-pointer group flex flex-col h-64 ${
@@ -203,12 +214,10 @@ export default function TodoListCard({
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Shared users avatars */}
           {shared_users && shared_users.length > 0 && (
             <UserAvatars users={shared_users} size="sm" />
           )}
           
-          {/* Only ONE pin icon in top right - show pin/unpin button */}
           {onPin && !is_shared && (
             <button
               onClick={(e) => {
@@ -257,14 +266,21 @@ export default function TodoListCard({
           />
         </div>
         
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-500">
-            {Math.round(completionPercentage)}% complete
-          </span>
-          <span className="text-gray-400">
-            {new Date(createdDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
+        <div className="text-xs text-gray-500">
+          {Math.round(completionPercentage)}% complete
         </div>
+      </div>
+      
+      {/* Metadata - Same format as NoteCard */}
+      <div className="flex items-center justify-between text-xs px-0 py-2 border-t border-gray-100 mt-auto">
+        {updatedDate && (
+          <span className="text-gray-500">
+            Edited {new Date(updatedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </span>
+        )}
+        <span className="text-gray-400">
+          Created {new Date(createdDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </span>
       </div>
       
       {/* Action buttons at bottom - only show on hover and for non-shared items */}
