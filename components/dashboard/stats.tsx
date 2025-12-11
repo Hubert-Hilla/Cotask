@@ -45,18 +45,6 @@ export default function StatsSection({
         )}
       </button>
 
-      <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-500">Due Today</span>
-          <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-            <span className="text-xl">📅</span>
-          </div>
-        </div>
-        <div className="text-3xl font-bold">{dueToday}</div>
-        <div className="text-sm text-gray-500 mt-1">
-          Requires attention
-        </div>
-      </div>
 
       <div className="bg-white rounded-xl p-6 border-2 border-gray-200">
         <div className="flex items-center justify-between mb-2">

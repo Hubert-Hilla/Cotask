@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface Task {
@@ -44,7 +44,6 @@ interface ListDetailViewProps {
     icon: string;
     color: string;
     is_pinned: boolean;
-    is_archived: boolean;
     created_by: string;
     created_at: string;
     updated_at: string;
@@ -65,8 +64,6 @@ export default function ListDetailView({
   list, 
   userId, 
   isOwner,
-  initialCompletedCount,
-  initialTotalTasks 
 }: ListDetailViewProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -83,7 +80,6 @@ export default function ListDetailView({
   const [shareUsername, setShareUsername] = useState('');
   const [sharePermission, setSharePermission] = useState<'view' | 'edit'>('view');
   const [sharedUsers, setSharedUsers] = useState<ListShare[]>([]);
-  const [isArchived, setIsArchived] = useState(list.is_archived);
   const [isPinned, setIsPinned] = useState(list.is_pinned);
   const [userPermission, setUserPermission] = useState<'owner' | 'edit' | 'view' | null>(null);
 
@@ -148,10 +144,6 @@ export default function ListDetailView({
 
   const canEdit = () => {
     return userPermission === 'owner' || userPermission === 'edit';
-  };
-
-  const canView = () => {
-    return userPermission === 'owner' || userPermission === 'edit' || userPermission === 'view';
   };
 
   const handleAddTask = async () => {
@@ -349,30 +341,6 @@ export default function ListDetailView({
     }
   };
 
-  const handleToggleArchive = async () => {
-    // Only owner can archive/unarchive
-    if (!isOwner) {
-      alert('Only the list owner can archive/unarchive the list');
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('lists')
-        .update({
-          is_archived: !isArchived,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', list.id);
-
-      if (error) throw error;
-
-      setIsArchived(!isArchived);
-    } catch (error) {
-      console.error('Error toggling archive:', error);
-    }
-  };
-
   const handleDeleteList = async () => {
     // Only owner can delete list
     if (!isOwner) {
@@ -409,7 +377,7 @@ export default function ListDetailView({
 
       if (listError) throw listError;
 
-      router.push('/dashboard');
+      redirect('/dashboard');
     } catch (error) {
       console.error('Error deleting list:', error);
     }
@@ -621,7 +589,6 @@ export default function ListDetailView({
                       {listTitle}
                       {renderPermissionBadge()}
                       {isPinned && <span className="text-amber-500" title="Pinned">📍</span>}
-                      {isArchived && <span className="text-gray-400" title="Archived">📦</span>}
                     </h1>
                     <p className="text-sm text-gray-500">
                       Created by {list.owner.name} • {activeTasks.length} active, {completedCount} completed
@@ -642,14 +609,6 @@ export default function ListDetailView({
                   title={isPinned ? 'Unpin' : 'Pin'}
                 >
                   {isPinned ? '📍' : '📌'}
-                </button>
-                
-                <button
-                  onClick={handleToggleArchive}
-                  className={`p-2 rounded-lg ${isArchived ? 'bg-gray-100 text-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  title={isArchived ? 'Unarchive' : 'Archive'}
-                >
-                  {isArchived ? '📤' : '📦'}
                 </button>
                 
                 <button
@@ -687,121 +646,196 @@ export default function ListDetailView({
 
       {/* Share Modal */}
       {isSharing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Share List</h2>
-              <button
-                onClick={() => {
-                  setIsSharing(false);
-                  setShareUsername('');
-                  setSharePermission('view');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Share with username
-              </label>
-              <input
-                type="text"
-                value={shareUsername}
-                onChange={(e) => setShareUsername(e.target.value)}
-                placeholder="Enter username"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleShareList();
-                }}
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Permission Level
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSharePermission('view')}
-                  className={`flex-1 px-4 py-2 rounded-md border ${
-                    sharePermission === 'view' 
-                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  View Only
-                </button>
-                <button
-                  onClick={() => setSharePermission('edit')}
-                  className={`flex-1 px-4 py-2 rounded-md border ${
-                    sharePermission === 'edit' 
-                      ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Can Edit
-                </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Share "{listTitle}"</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Invite contacts to collaborate on this list
+                </p>
               </div>
-            </div>
-            
-            <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
                   setIsSharing(false);
                   setShareUsername('');
                   setSharePermission('view');
                 }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleShareList}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-              >
-                Share
+                <span className="text-2xl">×</span>
               </button>
             </div>
 
-            {sharedUsers.length > 0 && (
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">Shared with</h3>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {/* Invite by Username */}
                 <div className="space-y-3">
-                  {sharedUsers.map((share) => (
-                    <div key={share.id} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">
-                          {share.user?.name || share.user?.username || 'Unknown User'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          @{share.user?.username}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={share.permission}
-                          onChange={(e) => handleUpdateSharePermission(share.id, e.target.value as 'view' | 'edit')}
-                          className="text-sm border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="view">View</option>
-                          <option value="edit">Edit</option>
-                        </select>
-                        <button
-                          onClick={() => handleRemoveShare(share.id)}
-                          className="text-red-500 hover:text-red-700 text-sm"
-                        >
-                          Remove
-                        </button>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Invite by Username
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        @
+                      </span>
+                      <input
+                        type="text"
+                        value={shareUsername}
+                        onChange={(e) => setShareUsername(e.target.value)}
+                        placeholder="username"
+                        className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition-all"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleShareList();
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Permission Select */}
+                    <div className="relative">
+                      <select
+                        value={sharePermission}
+                        onChange={(e) => setSharePermission(e.target.value as 'view' | 'edit')}
+                        className="appearance-none px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition-all pr-10 cursor-pointer"
+                      >
+                        <option value="edit">Can edit</option>
+                        <option value="view">Can view</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
                       </div>
                     </div>
-                  ))}
+                    
+                    <button
+                      onClick={handleShareList}
+                      className="px-6 py-3 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white font-medium rounded-xl hover:from-[#4338CA] hover:to-[#6D28D9] transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Invite
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    You can only share with users who have a CoTask account
+                  </p>
+                </div>
+
+                {/* Current Collaborators */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    People with access ({sharedUsers.length + 1}) {/* +1 for owner */}
+                  </label>
+                  
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                    {/* Owner (You) */}
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] flex items-center justify-center">
+                          <span className="text-white font-medium text-sm">
+                            {list.owner.name?.split(' ').map(n => n[0]).join('') || 'O'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {list.owner.name} (You)
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            @{list.owner.username}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 text-xs font-medium bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white rounded-full">
+                        Owner
+                      </span>
+                    </div>
+
+                    {/* Shared Users */}
+                    {sharedUsers.map((share) => (
+                      <div 
+                        key={share.id}
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                            <span className="text-white font-medium text-sm">
+                              {share.user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {share.user?.name || share.user?.username || 'Unknown User'}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              @{share.user?.username || 'unknown'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <select
+                              value={share.permission}
+                              onChange={(e) => handleUpdateSharePermission(share.id, e.target.value as 'view' | 'edit')}
+                              className="appearance-none px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]/20 transition-all pr-8 cursor-pointer"
+                            >
+                              <option value="view">Can view</option>
+                              <option value="edit">Can edit</option>
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => handleRemoveShare(share.id)}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remove"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {sharedUsers.length === 0 && (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 5.197a4 4 0 00-5.197-5.197" />
+                          </svg>
+                        </div>
+                        <p className="text-gray-500">No collaborators yet</p>
+                        <p className="text-sm text-gray-400 mt-1">Invite someone to collaborate</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setIsSharing(false);
+                    setShareUsername('');
+                    setSharePermission('view');
+                  }}
+                  className="px-6 py-2.5 bg-white text-gray-700 font-medium rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -831,7 +865,7 @@ export default function ListDetailView({
         </div>
 
         {/* Add Task Section */}
-        {canEdit() && !isArchived && (
+        {canEdit() && (
           <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
             {!showNewTaskInput ? (
               <button
@@ -887,18 +921,6 @@ export default function ListDetailView({
           </div>
         )}
 
-        {/* Archived Notice */}
-        {isArchived && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <span>📦</span>
-              <p className="text-yellow-700">
-                This list is archived. You can view tasks but cannot add new ones.
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Task List */}
         <div className="space-y-3">
           {filteredTasks.length === 0 ? (
@@ -908,7 +930,7 @@ export default function ListDetailView({
               </div>
               <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
               <p className="text-gray-500">
-                {canEdit() && !isArchived ? 'Add your first task to get started' : 'No tasks in this list'}
+                {canEdit() ? 'Add your first task to get started' : 'No tasks in this list'}
               </p>
             </div>
           ) : (
@@ -920,12 +942,12 @@ export default function ListDetailView({
                 <div className="flex items-start gap-3">
                   <button
                     onClick={() => handleToggleTask(task.id)}
-                    disabled={!canEdit() || isArchived}
+                    disabled={!canEdit()}
                     className={`w-6 h-6 rounded-full border-2 flex-shrink-0 mt-1 ${
                       task.is_completed
                         ? 'bg-green-500 border-green-500'
                         : 'border-gray-300'
-                    } ${(!canEdit() || isArchived) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                    } ${!canEdit() ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                   >
                     {task.is_completed && (
                       <span className="text-white text-sm">✓</span>
@@ -960,7 +982,7 @@ export default function ListDetailView({
                     </div>
                   </div>
                   
-                  {canEdit() && !isArchived && (
+                  {canEdit() && (
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => {

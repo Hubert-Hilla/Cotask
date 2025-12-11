@@ -1,9 +1,9 @@
-// components/dashboard/modals/CreateItemModal.tsx - UPDATED
+// components/dashboard/modals/CreateItemModal.tsx
 'use client';
 
 import { useState } from 'react';
 
-// Your database stores icon as string (emoji), so use emoji directly
+// Database stores icon as string (emoji), so use emoji directly
 type ListIcon = '📋' | '💼' | '🛒' | '🏠' | '❤️' | '📚' | '👥' | '⭐' | '🎯' | '📅' | '⚡' | '☕' | '💡' | '🚀' | '✅';
 type ListColor = 'indigo' | 'emerald' | 'amber' | 'rose' | 'purple' | 'blue';
 
@@ -14,11 +14,9 @@ interface CreateItemModalProps {
     title: string;
     icon: string; // Changed to string for emoji
     color: string;
-    isPrivate: boolean;
   }) => void;
   onCreateNote: (note: {
     title: string;
-    isPrivate: boolean;
   }) => void;
 }
 
@@ -32,7 +30,6 @@ export default function CreateItemModal({
   const [title, setTitle] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<ListIcon>('📋');
   const [selectedColor, setSelectedColor] = useState<ListColor>('indigo');
-  const [isPrivate, setIsPrivate] = useState(false);
 
   // Use emoji directly as values
   const iconOptions: Array<{ value: ListIcon; icon: string }> = [
@@ -74,12 +71,10 @@ export default function CreateItemModal({
         title: title.trim(),
         icon: selectedIcon, // This is now the emoji string
         color: selectedColor,
-        isPrivate
       });
     } else {
       onCreateNote({
         title: title.trim(),
-        isPrivate
       });
     }
 
@@ -95,7 +90,6 @@ export default function CreateItemModal({
     setTitle('');
     setSelectedIcon('📋');
     setSelectedColor('indigo');
-    setIsPrivate(false);
     setMode('list');
   };
 
@@ -233,39 +227,6 @@ export default function CreateItemModal({
                 </div>
               </>
             )}
-
-            {/* Privacy Toggle */}
-            <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200">
-              <div>
-                <label htmlFor="private" className="block text-sm font-medium text-gray-700">
-                  {mode === 'list' ? 'Private List' : 'Private Note'}
-                </label>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Only you can see and access this {mode === 'list' ? 'list' : 'note'}
-                </p>
-              </div>
-              <div className="relative inline-block w-12 h-6">
-                <input
-                  type="checkbox"
-                  id="private"
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                  className="sr-only"
-                />
-                <label
-                  htmlFor="private"
-                  className={`block h-6 rounded-full transition-colors cursor-pointer ${
-                    isPrivate ? 'bg-indigo-600' : 'bg-gray-200'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                      isPrivate ? 'transform translate-x-6' : ''
-                    }`}
-                  />
-                </label>
-              </div>
-            </div>
 
             {/* Action Buttons */}
             <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">

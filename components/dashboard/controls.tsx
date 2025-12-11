@@ -16,7 +16,6 @@ interface ControlsSectionProps {
   bulkSelectMode: boolean;
   onBulkSelectToggle: () => void;
   selectedItems: Set<string>;
-  onBulkArchive: () => void;
   onBulkDelete: () => void;
 }
 
@@ -32,7 +31,6 @@ export default function ControlsSection({
   bulkSelectMode,
   onBulkSelectToggle,
   selectedItems,
-  onBulkArchive,
   onBulkDelete,
 }: ControlsSectionProps) {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -183,7 +181,6 @@ export default function ControlsSection({
         {bulkSelectMode && selectedItems.size > 0 && (
           <div className="flex gap-2 ml-auto">
             <button
-              onClick={onBulkArchive}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
