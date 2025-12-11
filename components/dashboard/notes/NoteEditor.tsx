@@ -230,7 +230,7 @@ export default function NoteEditor({
     const todoId = `todo-${Date.now()}`;
     
     const todoWrapper = document.createElement('div');
-    todoWrapper.className = 'flex items-center gap-2 my-2 p-2 rounded bg-gray-50 border border-gray-200';
+    todoWrapper.className = 'flex items-center gap-2 my-2 p-2 rounded bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600';
     todoWrapper.setAttribute('data-todo-id', todoId);
     todoWrapper.setAttribute('data-todo', 'true');
     todoWrapper.contentEditable = 'false';
@@ -238,13 +238,14 @@ export default function NoteEditor({
     // Checkbox
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.className = 'w-4 h-4 rounded border-gray-300 cursor-pointer';
+    checkbox.className = 'w-4 h-4 rounded border-gray-300 dark:border-gray-600 cursor-pointer';
     checkbox.onchange = (e) => {
       const target = e.target as HTMLInputElement;
       const textInput = todoWrapper.querySelector('input[type="text"]') as HTMLInputElement;
       if (textInput) {
         textInput.classList.toggle('line-through', target.checked);
         textInput.classList.toggle('text-gray-500', target.checked);
+        textInput.classList.toggle('dark:text-gray-400', target.checked);
       }
       handleEditorChange();
     };
@@ -253,7 +254,7 @@ export default function NoteEditor({
     const textInput = document.createElement('input');
     textInput.type = 'text';
     textInput.placeholder = 'Task description...';
-    textInput.className = 'flex-1 bg-transparent border-none outline-none text-sm';
+    textInput.className = 'flex-1 bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500';
     
     textInput.oninput = () => {
       handleEditorChange();
@@ -289,7 +290,7 @@ export default function NoteEditor({
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.innerHTML = '×';
-    deleteBtn.className = 'text-gray-500 hover:text-red-500 font-bold text-xl px-2';
+    deleteBtn.className = 'text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 font-bold text-xl px-2';
     deleteBtn.onclick = (e) => {
       e.stopPropagation();
       todoWrapper.remove();
@@ -732,8 +733,8 @@ export default function NoteEditor({
     return (
       <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
         userPermission === 'edit' 
-          ? 'bg-green-100 text-green-800' 
-          : 'bg-blue-100 text-blue-800'
+          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
       }`}>
         {userPermission === 'edit' ? 'Can Edit' : 'View Only'}
       </span>
@@ -741,15 +742,15 @@ export default function NoteEditor({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="p-2 rounded-lg hover:bg-gray-100"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
               >
                 ← Back
               </button>
@@ -760,10 +761,10 @@ export default function NoteEditor({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Note title..."
-                  className="text-xl font-semibold bg-transparent border-none outline-none w-full"
+                  className="text-xl font-semibold bg-transparent border-none outline-none w-full text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500"
                   readOnly={!canEdit()}
                 />
-                <div className="flex items-center gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                   {lastSaved && (
                     <span>Last saved: {lastSaved}</span>
                   )}
@@ -776,7 +777,7 @@ export default function NoteEditor({
               {isOwner && (
                 <button
                   onClick={() => setIsSharing(true)}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                  className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 flex items-center gap-2"
                 >
                   <span>🔗</span>
                   Share
@@ -786,7 +787,7 @@ export default function NoteEditor({
               {isOwner && (
                 <button
                   onClick={handleTogglePin}
-                  className={`p-2 rounded-lg ${isPinned ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  className={`p-2 rounded-lg ${isPinned ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                   title={isPinned ? 'Unpin' : 'Pin'}
                 >
                   {isPinned ? '📍' : '📌'}
@@ -794,24 +795,24 @@ export default function NoteEditor({
               )}
               
               <div className="relative group">
-                <button className="p-2 rounded-lg hover:bg-gray-100">
+                <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white">
                   ⋯
                 </button>
-                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                   <button
                     onClick={() => {
                       if (editorRef.current) {
                         editorRef.current.focus();
                       }
                     }}
-                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                    className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg"
                   >
                     ✏️ Focus Editor
                   </button>
                   {!isOwner && (
                     <button
                       onClick={handleRemoveSelf}
-                      className="w-full px-4 py-2 text-left text-orange-600 hover:bg-orange-50"
+                      className="w-full px-4 py-2 text-left text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20"
                     >
                       🚪 Leave Note
                     </button>
@@ -819,7 +820,7 @@ export default function NoteEditor({
                   {isOwner && (
                     <button
                       onClick={handleDeleteNote}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 last:rounded-b-lg"
+                      className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 last:rounded-b-lg"
                     >
                       🗑️ Delete Note
                     </button>
@@ -833,12 +834,12 @@ export default function NoteEditor({
 
       {/* Share Modal */}
       {isSharing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-auto max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Share "{title}"</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Share "{title}"</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   Invite contacts to collaborate on this note
                 </p>
               </div>
@@ -848,7 +849,7 @@ export default function NoteEditor({
                   setShareUsername('');
                   setSharePermission('view');
                 }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-white"
               >
                 <span className="text-2xl">×</span>
               </button>
@@ -857,12 +858,12 @@ export default function NoteEditor({
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Invite by Username
                   </label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
                         @
                       </span>
                       <input
@@ -870,7 +871,7 @@ export default function NoteEditor({
                         value={shareUsername}
                         onChange={(e) => setShareUsername(e.target.value)}
                         placeholder="username"
-                        className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition-all"
+                        className="w-full pl-8 pr-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:border-[#4F46E5] dark:focus:border-indigo-400 focus:ring-2 focus:ring-[#4F46E5]/20 dark:focus:ring-indigo-400/20 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleShareNote();
                         }}
@@ -881,12 +882,12 @@ export default function NoteEditor({
                       <select
                         value={sharePermission}
                         onChange={(e) => setSharePermission(e.target.value as 'view' | 'edit')}
-                        className="appearance-none px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 transition-all pr-10 cursor-pointer"
+                        className="appearance-none px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:border-[#4F46E5] dark:focus:border-indigo-400 focus:ring-2 focus:ring-[#4F46E5]/20 dark:focus:ring-indigo-400/20 transition-all pr-10 cursor-pointer"
                       >
                         <option value="edit">Can edit</option>
                         <option value="view">Can view</option>
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
@@ -901,18 +902,18 @@ export default function NoteEditor({
                       Invite
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     You can only share with users who have a CoTask account
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     People with access ({sharedUsers.length})
                   </label>
                   
                   <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] flex items-center justify-center">
                           <span className="text-white font-medium">
@@ -920,15 +921,15 @@ export default function NoteEditor({
                           </span>
                         </div>
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 dark:text-white">
                             {isOwner ? "You" : "Note Owner"}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
                             Full access
                           </div>
                         </div>
                       </div>
-                      <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                      <span className="px-3 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-full">
                         Owner
                       </span>
                     </div>
@@ -936,7 +937,7 @@ export default function NoteEditor({
                     {sharedUsers.map((share) => (
                       <div 
                         key={share.id}
-                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors group"
+                        className="flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
@@ -945,10 +946,10 @@ export default function NoteEditor({
                             </span>
                           </div>
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-900 dark:text-white">
                               {share.user?.name || share.user?.username || 'Unknown User'}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                               @{share.user?.username || 'unknown'}
                             </div>
                           </div>
@@ -959,12 +960,12 @@ export default function NoteEditor({
                             <select
                               value={share.permission}
                               onChange={(e) => handleUpdateSharePermission(share.id, e.target.value as 'view' | 'edit')}
-                              className="appearance-none px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5]/20 transition-all pr-8 cursor-pointer"
+                              className="appearance-none px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:border-[#4F46E5] dark:focus:border-indigo-400 focus:ring-1 focus:ring-[#4F46E5]/20 dark:focus:ring-indigo-400/20 transition-all pr-8 cursor-pointer"
                             >
                               <option value="view">Can view</option>
                               <option value="edit">Can edit</option>
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
@@ -973,7 +974,7 @@ export default function NoteEditor({
                           
                           <button
                             onClick={() => handleRemoveShare(share.id)}
-                            className="p-2 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                             title="Remove"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -986,13 +987,13 @@ export default function NoteEditor({
 
                     {sharedUsers.length === 0 && (
                       <div className="text-center py-8">
-                        <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-3">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                          <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 5.197a4 4 0 00-5.197-5.197" />
                           </svg>
                         </div>
-                        <p className="text-gray-500">No collaborators yet</p>
-                        <p className="text-sm text-gray-400 mt-1">Invite someone to get started</p>
+                        <p className="text-gray-500 dark:text-gray-400">No collaborators yet</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Invite someone to get started</p>
                       </div>
                     )}
                   </div>
@@ -1000,7 +1001,7 @@ export default function NoteEditor({
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+            <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
               <div className="flex justify-end">
                 <button
                   onClick={() => {
@@ -1008,7 +1009,7 @@ export default function NoteEditor({
                     setShareUsername('');
                     setSharePermission('view');
                   }}
-                  className="px-6 py-2.5 bg-white text-gray-700 font-medium rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                 >
                   Done
                 </button>
@@ -1020,15 +1021,15 @@ export default function NoteEditor({
 
       {/* Toolbar with MS Word-like behavior */}
       {canEdit() && (
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="max-w-7xl mx-auto px-4 py-2">
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={toggleBold}
                 className={`px-3 py-1.5 rounded font-semibold transition-colors ${
                   isBold 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
                 }`}
                 title="Bold (Ctrl+B)"
               >
@@ -1039,22 +1040,22 @@ export default function NoteEditor({
                 onClick={toggleItalic}
                 className={`px-3 py-1.5 rounded italic transition-colors ${
                   isItalic 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
                 }`}
                 title="Italic (Ctrl+I)"
               >
                 I
               </button>
               
-              <div className="w-px h-6 bg-gray-300 mx-1" />
+              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
               
               <button
                 onClick={() => applyBlockFormat('heading1')}
                 className={`px-3 py-1.5 rounded font-semibold transition-colors ${
                   blockFormat === 'heading1' 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
                 }`}
                 title="Heading 1"
               >
@@ -1065,29 +1066,29 @@ export default function NoteEditor({
                 onClick={() => applyBlockFormat('heading2')}
                 className={`px-3 py-1.5 rounded font-semibold transition-colors ${
                   blockFormat === 'heading2' 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : 'bg-gray-100 hover:bg-gray-200'
+                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-600' 
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
                 }`}
                 title="Heading 2"
               >
                 H2
               </button>
               
-              <div className="w-px h-6 bg-gray-300 mx-1" />
+              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
               
               <button
                 onClick={insertBulletPoint}
-                className="px-3 py-1.5 rounded transition-colors bg-gray-100 hover:bg-gray-200"
+                className="px-3 py-1.5 rounded transition-colors bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white"
                 title="Insert Bullet Point"
               >
                 • Bullet
               </button>
               
-              <div className="w-px h-6 bg-gray-300 mx-1" />
+              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
               
               <button
                 onClick={insertTodo}
-                className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 transition-colors"
+                className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
                 title="Add Todo"
               >
                 ✓ Todo
@@ -1106,20 +1107,21 @@ export default function NoteEditor({
           onClick={handleEditorClick}
           onKeyUp={handleEditorKeyUp}
           onKeyDown={handleEditorKeyDown}
-          className="min-h-[500px] p-4 bg-white rounded-lg border border-gray-200 outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500
-                     [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:mt-4 [&>h1]:mb-2
-                     [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mt-3 [&>h2]:mb-2
+          className="min-h-[500px] p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 outline-none focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-gray-900 dark:text-white
+                     [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:mt-4 [&>h1]:mb-2 dark:[&>h1]:text-gray-100
+                     [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mt-3 [&>h2]:mb-2 dark:[&>h2]:text-gray-200
                      [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:my-2
                      [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:my-2
                      [&>li]:my-1
-                     [&>p]:my-2
-                     [&>div[data-todo]]:flex [&>div[data-todo]]:items-center [&>div[data-todo]]:gap-2 [&>div[data-todo]]:my-2 [&>div[data-todo]]:p-2 [&>div[data-todo]]:rounded [&>div[data-todo]]:bg-gray-50 [&>div[data-todo]]:border [&>div[data-todo]]:border-gray-200"
+                     [&>p]:my-2 dark:[&>p]:text-gray-100
+                     [&>strong]:font-semibold dark:[&>strong]:text-gray-100
+                     [&_div[data-todo]]:flex [&_div[data-todo]]:items-center [&_div[data-todo]]:gap-2 [&_div[data-todo]]:my-2 [&_div[data-todo]]:p-2 [&_div[data-todo]]:rounded [&_div[data-todo]]:bg-gray-50 dark:[&_div[data-todo]]:bg-gray-700 [&_div[data-todo]]:border [&_div[data-todo]]:border-gray-200 dark:[&_div[data-todo]]:border-gray-600"
           suppressContentEditableWarning
         />
         
         {!canEdit() && (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-700">
+          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-yellow-700 dark:text-yellow-400">
               You have view-only access to this note. Only users with edit permission can modify it.
             </p>
           </div>
