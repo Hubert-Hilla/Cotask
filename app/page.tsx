@@ -16,7 +16,7 @@ export default function Home() {
               </svg>
             </div>
             <span className="text-2xl font-semibold bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] bg-clip-text text-transparent">
-              <Link href={"/"}>
+              <Link href={"/dashboard"}>
               Cotask
               </Link>
             </span>

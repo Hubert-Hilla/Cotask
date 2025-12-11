@@ -146,15 +146,6 @@ export default function DashboardHeader({ user, onLogout }: DashboardHeaderProps
                   >
                     Profile
                   </button>
-                  <button 
-                    onClick={() => {
-                      router.push('/dashboard/settings');
-                      setShowDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50"
-                  >
-                    Settings
-                  </button>
                   <button
                     onClick={() => {
                       onLogout();
