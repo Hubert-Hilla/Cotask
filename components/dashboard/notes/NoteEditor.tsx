@@ -61,6 +61,21 @@ export default function NoteEditor({
   const isEditingRef = useRef(false);
   const lastSavedContentRef = useRef(initialContent);
   const lastSavedTitleRef = useRef(initialTitle);
+  
+  // Modal state for notifications
+  const [showModal, setShowModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState<{
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+    onConfirm?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  }>({
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   // Load shared users if owner
   useEffect(() => {
@@ -68,6 +83,25 @@ export default function NoteEditor({
       loadSharedUsers();
     }
   }, [noteId, isOwner]);
+
+  const showNotification = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'info',
+    onConfirm?: () => void,
+    confirmText: string = 'OK',
+    cancelText?: string
+  ) => {
+    setModalConfig({
+      title,
+      message,
+      type,
+      onConfirm,
+      confirmText,
+      cancelText
+    });
+    setShowModal(true);
+  };
 
   const loadSharedUsers = async () => {
     try {
@@ -222,7 +256,7 @@ export default function NoteEditor({
 
   const insertTodo = () => {
     if (!editorRef.current || !canEdit()) {
-      alert('You do not have permission to edit this note');
+      showNotification('Permission Denied', 'You do not have permission to edit this note', 'warning');
       return;
     }
     
@@ -494,8 +528,13 @@ export default function NoteEditor({
         },
         () => {
           console.log('Note deleted');
-          alert('This note has been deleted');
-          router.push('/dashboard');
+          showNotification(
+            'Note Deleted',
+            'This note has been deleted by the owner',
+            'info',
+            () => router.push('/dashboard'),
+            'Go to Dashboard'
+          );
         }
       )
       .subscribe();
@@ -562,24 +601,35 @@ export default function NoteEditor({
   // Handle note deletion
   const handleDeleteNote = async () => {
     if (!isOwner) {
-      alert('Only the note owner can delete this note');
+      showNotification('Permission Denied', 'Only the note owner can delete this note', 'warning');
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this note?')) return;
-
-    const { error } = await supabase
-      .from('notes')
-      .delete()
-      .eq('id', noteId);
-    
-    redirect('/dashboard');
+    showNotification(
+      'Delete Note',
+      'Are you sure you want to delete this note? This action cannot be undone.',
+      'warning',
+      async () => {
+        const { error } = await supabase
+          .from('notes')
+          .delete()
+          .eq('id', noteId);
+        
+        if (error) {
+          showNotification('Error', 'Failed to delete note. Please try again.', 'error');
+        } else {
+          router.push('/dashboard');
+        }
+      },
+      'Delete',
+      'Cancel'
+    );
   };
 
   // Handle pin/unpin
   const handleTogglePin = async () => {
     if (!isOwner) {
-      alert('Only the note owner can pin/unpin the note');
+      showNotification('Permission Denied', 'Only the note owner can pin/unpin the note', 'warning');
       return;
     }
 
@@ -599,17 +649,18 @@ export default function NoteEditor({
     } catch (error) {
       console.error('Error toggling pin:', error);
       setIsPinned(!isPinned);
+      showNotification('Error', 'Failed to update pin status', 'error');
     }
   };
 
   const handleShareNote = async () => {
     if (!isOwner) {
-      alert('Only the note owner can share the note');
+      showNotification('Permission Denied', 'Only the note owner can share the note', 'warning');
       return;
     }
 
     if (!shareUsername.trim()) {
-      alert('Please enter a username');
+      showNotification('Username Required', 'Please enter a username to share with', 'warning');
       return;
     }
 
@@ -622,18 +673,18 @@ export default function NoteEditor({
 
       if (findError) {
         console.error('Find user error:', findError);
-        alert('User not found');
+        showNotification('User Not Found', `No user found with username "${shareUsername}"`, 'error');
         return;
       }
 
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       if (!currentUser) {
-        alert('You must be logged in to share notes');
+        showNotification('Authentication Required', 'You must be logged in to share notes', 'error');
         return;
       }
 
       if (userToShare.id === currentUser.id) {
-        alert('Cannot share with yourself');
+        showNotification('Invalid Action', 'You cannot share a note with yourself', 'warning');
         return;
       }
 
@@ -645,7 +696,7 @@ export default function NoteEditor({
         .maybeSingle();
 
       if (existingShare) {
-        alert('Note already shared with this user');
+        showNotification('Already Shared', 'This note is already shared with this user', 'info');
         return;
       }
 
@@ -668,16 +719,20 @@ export default function NoteEditor({
       setShareUsername('');
       setSharePermission('view');
       setIsSharing(false);
-      alert(`Note shared with ${userToShare.name || userToShare.username}!`);
+      showNotification(
+        'Note Shared!', 
+        `Successfully shared note with ${userToShare.name || userToShare.username}`, 
+        'success'
+      );
     } catch (error) {
       console.error('Error sharing note:', error);
-      alert('Failed to share note. Please try again.');
+      showNotification('Share Failed', 'Failed to share note. Please try again.', 'error');
     }
   };
 
   const handleRemoveShare = async (shareId: string) => {
     if (!isOwner) {
-      alert('Only the note owner can remove shares');
+      showNotification('Permission Denied', 'Only the note owner can remove shares', 'warning');
       return;
     }
 
@@ -692,42 +747,57 @@ export default function NoteEditor({
       setSharedUsers(prev => prev.filter(share => share.id !== shareId));
     } catch (error) {
       console.error('Error removing share:', error);
+      showNotification('Error', 'Failed to remove share. Please try again.', 'error');
     }
   };
 
   const handleRemoveSelf = async () => {
     if (isOwner) {
-      alert('You are the owner of this note. Transfer ownership or delete the note instead.');
+      showNotification(
+        'Cannot Leave',
+        'You are the owner of this note. Transfer ownership or delete the note instead.',
+        'warning'
+      );
       return;
     }
 
-    if (!confirm('Are you sure you want to remove yourself from this note? You will lose access.')) {
-      return;
-    }
+    showNotification(
+      'Leave Note',
+      'Are you sure you want to remove yourself from this note? You will lose access.',
+      'warning',
+      async () => {
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (!currentUser) return;
 
-    try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) return;
+          const { error } = await supabase
+            .from('note_shares')
+            .delete()
+            .eq('note_id', noteId)
+            .eq('user_id', currentUser.id);
 
-      const { error } = await supabase
-        .from('note_shares')
-        .delete()
-        .eq('note_id', noteId)
-        .eq('user_id', currentUser.id);
+          if (error) throw error;
 
-      if (error) throw error;
-
-      alert('You have been removed from this note');
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Error removing self from note:', error);
-      alert('Failed to remove yourself from the note');
-    }
+          showNotification(
+            'Access Removed',
+            'You have been removed from this note',
+            'info',
+            () => router.push('/dashboard'),
+            'Go to Dashboard'
+          );
+        } catch (error) {
+          console.error('Error removing self from note:', error);
+          showNotification('Error', 'Failed to remove yourself from the note', 'error');
+        }
+      },
+      'Leave',
+      'Cancel'
+    );
   };
 
   const handleUpdateSharePermission = async (shareId: string, newPermission: 'view' | 'edit') => {
     if (!isOwner) {
-      alert('Only the note owner can update share permissions');
+      showNotification('Permission Denied', 'Only the note owner can update share permissions', 'warning');
       return;
     }
 
@@ -750,6 +820,7 @@ export default function NoteEditor({
       );
     } catch (error) {
       console.error('Error updating share permission:', error);
+      showNotification('Error', 'Failed to update permission. Please try again.', 'error');
     }
   };
 
@@ -839,20 +910,10 @@ export default function NoteEditor({
                   ⋯
                 </button>
                 <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                  <button
-                    onClick={() => {
-                      if (editorRef.current) {
-                        editorRef.current.focus();
-                      }
-                    }}
-                    className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 first:rounded-t-lg"
-                  >
-                    ✏️ Focus Editor
-                  </button>
                   {!isOwner && (
                     <button
                       onClick={handleRemoveSelf}
-                      className="w-full px-4 py-2 text-left text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                      className="w-full px-4 py-2 text-left text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-t-lg"
                     >
                       🚪 Leave Note
                     </button>
@@ -860,7 +921,7 @@ export default function NoteEditor({
                   {isOwner && (
                     <button
                       onClick={handleDeleteNote}
-                      className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 last:rounded-b-lg"
+                      className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
                     >
                       🗑️ Delete Note
                     </button>
@@ -1175,6 +1236,65 @@ export default function NoteEditor({
           </div>
         )}
       </main>
+
+      {/* Notification Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-auto">
+            <div className="p-6">
+              <div className="flex items-start gap-4">
+                <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
+                  modalConfig.type === 'success' ? 'bg-green-100 dark:bg-green-900/30' :
+                  modalConfig.type === 'error' ? 'bg-red-100 dark:bg-red-900/30' :
+                  modalConfig.type === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                  'bg-blue-100 dark:bg-blue-900/30'
+                }`}>
+                  <span className="text-2xl">
+                    {modalConfig.type === 'success' ? '✓' :
+                     modalConfig.type === 'error' ? '✕' :
+                     modalConfig.type === 'warning' ? '⚠' :
+                     'ℹ'}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    {modalConfig.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {modalConfig.message}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="px-6 pb-6 flex gap-3 justify-end">
+              {modalConfig.cancelText && (
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium"
+                >
+                  {modalConfig.cancelText}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  if (modalConfig.onConfirm) {
+                    modalConfig.onConfirm();
+                  }
+                  setShowModal(false);
+                }}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  modalConfig.type === 'error' || modalConfig.type === 'warning'
+                    ? 'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600'
+                    : 'bg-indigo-600 dark:bg-indigo-500 text-white hover:bg-indigo-700 dark:hover:bg-indigo-600'
+                }`}
+              >
+                {modalConfig.confirmText}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

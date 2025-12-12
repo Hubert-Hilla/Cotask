@@ -3,7 +3,6 @@ import { AuthButton } from "@/components/header/auth-button";
 import { Suspense } from "react";
 import Link from "next/link";
 
-
 export default function Home() {
   return (
     <>
@@ -44,7 +43,7 @@ export default function Home() {
               <span className="font-semibold">Cotask</span>
             </div>
             <p className="text-gray-500">
-              © 2024 Cotask. Simple task management that just
+              © 2025 Cotask. Simple task management that just
               works.
             </p>
           </div>

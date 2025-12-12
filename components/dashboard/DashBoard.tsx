@@ -78,6 +78,28 @@ export default function DashboardPage({
   const [allLists, setAllLists] = useState<ListWithShares[]>(initialAllLists);
   const [allNotes, setAllNotes] = useState<NoteWithShares[]>(initialAllNotes);
 
+  // Update state when props change (after server-side refresh)
+  useEffect(() => {
+    setAllLists(initialAllLists);
+    setAllNotes(initialAllNotes);
+  }, [initialAllLists, initialAllNotes]);
+
+  // Refresh data when page becomes visible (e.g., after navigation back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page visible, refreshing data...');
+        router.refresh();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router]);
+
   // Memoize pinned sets for performance
   const pinnedLists = useMemo(() => 
     new Set(allLists.filter(l => l.is_pinned).map(l => l.id)),
@@ -89,10 +111,10 @@ export default function DashboardPage({
     [allNotes]
   );
 
-  // Calculate stats from database structure (only for user's own lists) - Memoized
+  // Calculate stats from database structure (includes both owned and shared lists) - Memoized
   const stats = useMemo(() => {
-    const myLists = allLists.filter(list => !list.is_shared);
-    return myLists.reduce((acc, list) => {
+    // Include ALL lists - both owned and shared
+    return allLists.reduce((acc, list) => {
       const tasks = list.tasks || [];
       const taskCount = tasks.length;
       const completedCount = tasks.filter(task => task.is_completed).length;

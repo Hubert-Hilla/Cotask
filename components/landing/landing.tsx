@@ -4,6 +4,7 @@ import PrivacyPolicy from "./privacy";
 import FeaturesCarousel from "../FeaturesCarousel";
 import StartButton, { StartButtonWhite } from "../ui/startButton";
 import Image from "next/image";
+import CookieNotice from "../CookieNotice";
 
 
 export default function LandingPageNew() {
@@ -21,10 +22,10 @@ export default function LandingPageNew() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
             </svg>
-            <span>Simple. Powerful. Just works.</span>
+            <span className="font-medium">Simple. Powerful. Just works.</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl mb-6">
+          <h1 className="text-5xl md:text-7xl mb-6 font-bold">
             Task management
             <br />
             <span className="bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] bg-clip-text text-transparent">
@@ -32,7 +33,7 @@ export default function LandingPageNew() {
             </span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
             No complexity. No learning curve. Just simple lists
             and notes that sync in real-time.
             <br />
@@ -42,7 +43,7 @@ export default function LandingPageNew() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
              <StartButton/>
 
-            <button className="px-8 py-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-lg font-medium transition-colors">
+            <button className="px-8 py-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 text-lg font-medium transition-all duration-200">
               Watch Demo
             </button>
           </div>
@@ -70,58 +71,56 @@ export default function LandingPageNew() {
           </div>
         </div>
 
-        {/* Hero Image */}
-   <div className="mt-20 relative z-10">
-  <div className="max-w-6xl mx-auto">
-    <div className="rounded-2xl shadow-2xl border-6 border-white overflow-hidden animate-float">
-      <div className="w-full h-[350px] md:h-[450px] lg:h-[550px] relative">
-        <Image
-          src="/hero.png" 
-          alt="CoTask Dashboard Preview"
-          fill
-          className="object-contain"
-          priority
-          sizes="100vw"
-        />
-      </div>
-    </div>
-  </div>
-</div>
-
-
+        {/* Hero Image - Improved */}
+        <div className="mt-20 relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="rounded-2xl shadow-2xl border-8 border-white overflow-hidden animate-float bg-white">
+              <div className="w-full h-[350px] md:h-[450px] lg:h-[550px] relative">
+                <Image
+                  src="/hero.png" 
+                  alt="CoTask Dashboard Preview"
+                  fill
+                  className="object-contain"
+                  priority
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Features Carousel Section */}
       <FeaturesCarousel />
 
-      {/* Simplicity Section */}
+      {/* Simplicity Section - Improved */}
       <section className="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <div>
-              <h2 className="text-4xl md:text-5xl mb-6">
+            <div className="order-2 md:order-1">
+              <h2 className="text-4xl md:text-5xl mb-6 font-bold leading-tight">
                 Built on the principle of
                 <span className="text-[#4F46E5]">
                   {" "}
                   simplicity
                 </span>
               </h2>
-              <p className="text-xl text-gray-600 mb-6">
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">
                 No overwhelming menus. No complex workflows. No
                 steep learning curve.
               </p>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                 Cotask gets out of your way so you can focus on
                 what matters: getting things done.
               </p>
               <StartButton />
             </div>
 
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-                <div className="w-full h-80 relative">
+            <div className="relative order-1 md:order-2">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border-8 border-white bg-white">
+                <div className="w-full aspect-[4/3] relative">
                   <Image
-                    src="/note.png" // or any image you want
+                    src="/note.png"
                     alt="CoTask Simple Interface"
                     fill
                     className="object-contain"
@@ -129,23 +128,25 @@ export default function LandingPageNew() {
                   />
                 </div>
               </div>
+              {/* Decorative element */}
+              <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-gradient-to-br from-indigo-200 to-purple-200 rounded-full blur-2xl opacity-50 -z-10" />
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* CTA Section - Improved */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] rounded-3xl p-12 md:p-16 text-white relative overflow-hidden">
+          <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] rounded-3xl p-12 md:p-16 text-white relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full animate-ping-slow" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full animate-ping-slower" />
 
             <div className="relative z-10">
-              <h2 className="text-4xl md:text-5xl mb-4">
+              <h2 className="text-4xl md:text-5xl mb-4 font-bold">
                 Ready to simplify your workflow?
               </h2>
-              <p className="text-xl mb-8 opacity-90">
+              <p className="text-xl mb-8 opacity-90 leading-relaxed">
                 Join others who've already made the switch to
                 effortless task management
               </p>
@@ -155,17 +156,17 @@ export default function LandingPageNew() {
         </div>
       </section>
 
-      {/* About Section */}
+      {/* About Section - Improved */}
       <section
         id="about"
         className="py-20 bg-gradient-to-br from-gray-50 to-white"
       >
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-4xl md:text-5xl mb-8 text-center">
+            <h2 className="text-4xl md:text-5xl mb-8 text-center font-bold">
               About Cotask
             </h2>
-            <div className="space-y-6 text-lg text-gray-600">
+            <div className="space-y-6 text-lg text-gray-600 leading-relaxed">
               <p>
                 Cotask was built with one core principle:{" "}
                 <span className="text-gray-900 font-semibold">
@@ -185,19 +186,19 @@ export default function LandingPageNew() {
                 don't need complicated features—they just need
                 to get done.
               </p>
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-8">
-                <h3 className="text-xl text-gray-900 mb-4">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-8 border border-indigo-100">
+                <h3 className="text-xl text-gray-900 mb-5 font-semibold">
                   Perfect for:
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   {perfectFor.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-[#4F46E5] mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-[#4F46E5] mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>
-                        <span className="text-gray-900 font-medium">
-                          {item.title}
+                        <span className="text-gray-900 font-semibold">
+                          {item.title}:
                         </span>{" "}
                         {item.description}
                       </span>
@@ -212,7 +213,7 @@ export default function LandingPageNew() {
                 what matters most: getting things done without
                 the overhead.
               </p>
-              <p className="text-gray-900 italic">
+              <p className="text-gray-900 font-medium italic text-center text-xl pt-4">
                 No bloat. No confusion. Just tasks and notes
                 that work the way you expect them to.
               </p>
@@ -223,44 +224,14 @@ export default function LandingPageNew() {
 
       {/* Privacy Section */}
       <PrivacyPolicy />
+
+      {/* Cookie Notice */}
+      <CookieNotice />
     </div>
   );
 }
 
 // Data arrays
-const features = [
-  {
-    icon: UsersIcon,
-    title: "Real-time Sync",
-    description: "See changes instantly as your team collaborates. No refresh needed.",
-    color: "from-indigo-500 to-purple-600",
-  },
-  {
-    icon: CheckCircleIcon,
-    title: "Lists & Notes",
-    description: "Create todo lists or rich text notes with embedded tasks.",
-    color: "from-emerald-500 to-teal-600",
-  },
-  {
-    icon: ShareIcon,
-    title: "Easy Sharing",
-    description: "Share with anyone. Control who can view or edit.",
-    color: "from-rose-500 to-pink-600",
-  },
-  {
-    icon: RotateCwIcon,
-    title: "Recurring Tasks",
-    description: "Set it once. Never forget your regular tasks again.",
-    color: "from-amber-500 to-orange-600",
-  },
-  {
-    icon: ZapIcon,
-    title: "Blazing Fast",
-    description: "Optimized for speed. Works offline. Syncs when online.",
-    color: "from-blue-500 to-cyan-600",
-  },
-];
-
 const perfectFor = [
   {
     title: "Individuals",
@@ -275,45 +246,3 @@ const perfectFor = [
     description: "working on simple projects without unnecessary complexity",
   },
 ];
-
-
-// SVG Icon Components
-function UsersIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 5.197a4 4 0 00-5.197-5.197" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-function ShareIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-    </svg>
-  );
-}
-
-function RotateCwIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  );
-}
-
-function ZapIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>
-  );
-}

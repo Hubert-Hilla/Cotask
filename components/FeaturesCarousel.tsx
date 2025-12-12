@@ -67,51 +67,80 @@ export default function FeaturesCarousel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0.3);
   const [isInView, setIsInView] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const rafRef = useRef<number | undefined>(undefined);
+
+  // Fix hydration mismatch by only activating scroll after mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!isMounted) return;
+
+    let ticking = false;
+
     const handleScroll = () => {
-      if (!containerRef.current) return;
+      if (!ticking) {
+        rafRef.current = requestAnimationFrame(() => {
+          if (!containerRef.current) {
+            ticking = false;
+            return;
+          }
 
-      const section = containerRef.current;
-      const rect = section.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const sectionHeight = section.offsetHeight;
+          const section = containerRef.current;
+          const rect = section.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
+          const sectionHeight = section.offsetHeight;
 
-      // Check if section is in viewport
-      const isVisible = rect.top < windowHeight && rect.bottom > 0;
-      setIsInView(isVisible);
+          // Check if section is in viewport
+          const isVisible = rect.top < windowHeight && rect.bottom > 0;
+          setIsInView(isVisible);
 
-      if (isVisible) {
-        // Calculate progress based on how far through the section we've scrolled
-        const scrollTop = window.scrollY;
-        const sectionTop = section.offsetTop;
-        const sectionStart = sectionTop - windowHeight;
-        const sectionEnd = sectionTop + sectionHeight;
-        
-        // Progress from 0 to 1 as we scroll through the section
-        let progress = ((scrollTop - sectionStart) / (sectionEnd - sectionStart)) + 0.2;
-        progress = Math.max(0, Math.min(1, progress)); // Clamp between 0 and 1
-        
-        setScrollProgress(progress);
+          if (isVisible) {
+            // Calculate progress based on how far through the section we've scrolled
+            const scrollTop = window.scrollY;
+            const sectionTop = section.offsetTop;
+            const sectionStart = sectionTop - windowHeight;
+            const sectionEnd = sectionTop + sectionHeight;
+            
+            // Progress from 0 to 1 as we scroll through the section
+            let progress = ((scrollTop - sectionStart) / (sectionEnd - sectionStart)) + 0.2;
+            progress = Math.max(0, Math.min(1, progress)); // Clamp between 0 and 1
+            
+            setScrollProgress(progress);
+          }
+
+          ticking = false;
+        });
+
+        ticking = true;
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Initial calculation
 
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [isMounted]);
 
   // Calculate horizontal offset based on scroll progress
-  // Move from right (off-screen) to left (off-screen)
   const totalFeaturesWidth = features.length * 320 + (features.length - 1) * 24; // 320px per card + 24px gap
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const viewportWidth = isMounted ? window.innerWidth : 1200;
   const maxOffset = Math.max(0, totalFeaturesWidth - viewportWidth + 200); // Extra 200px to scroll off-screen
   
   // Start at right side (positive offset) and move left (negative offset) as we scroll down
-  const horizontalOffset = isInView 
-    ? maxOffset - (scrollProgress * (maxOffset * 2)) // Go from +maxOffset to -maxOffset
-    : maxOffset;
+  // Default to initial position for SSR
+  const horizontalOffset = !isMounted 
+    ? maxOffset // Server-side default
+    : isInView 
+      ? maxOffset - (scrollProgress * (maxOffset * 2)) // Go from +maxOffset to -maxOffset
+      : maxOffset;
 
   return (
     <section ref={containerRef} className="py-32 bg-white relative overflow-hidden">
@@ -135,7 +164,7 @@ export default function FeaturesCarousel() {
             className="flex gap-6 absolute top-0 left-0 transition-transform duration-300 ease-out"
             style={{ 
               transform: `translateX(${horizontalOffset}px)`,
-              willChange: 'transform'
+              willChange: isMounted && isInView ? 'transform' : 'auto'
             }}
           >
             {features.map((feature, index) => (
