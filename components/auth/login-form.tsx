@@ -33,17 +33,24 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
+      
       if (error) throw error;
-      router.replace("/dashboard");
+      
+      // Wait a moment for the session to be fully established
+      if (data.session) {
+        // Use window.location for a full page navigation
+        // This is more reliable in production than router.replace
+        window.location.href = "/dashboard";
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
       setIsLoading(false);
     }
+    // Don't set isLoading to false here - let the redirect happen
   };
 
   return (
