@@ -52,7 +52,7 @@ export function SignUpForm({
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -63,13 +63,22 @@ export function SignUpForm({
           }
         },
       });
+      
       if (error) throw error;
-      router.push("/auth/sign-up-success");
+      
+      // If email confirmation is disabled or user is immediately confirmed
+      if (data.session) {
+        // User is logged in immediately - redirect to dashboard
+        window.location.href = "/dashboard";
+      } else {
+        // Email confirmation required - redirect to success page
+        window.location.href = "/auth/sign-up-success";
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
       setIsLoading(false);
     }
+    // Don't set isLoading to false here - let the redirect happen
   };
 
   return (
