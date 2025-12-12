@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ===================================
-# Cotask Deployment Script
+# Cotask Deployment Script (Non-interactive)
 # ===================================
 # This script sets up your Cotask Next.js app on a VPS with:
 # - Docker & Docker Compose
@@ -31,7 +31,7 @@ echo ""
 echo -e "${GREEN}[1/9] Updating system packages...${NC}"
 sudo apt update && sudo apt upgrade -y
 
-# Add Swap Space (helpful for build process)
+# Add Swap Space
 echo -e "${GREEN}[2/9] Adding swap space...${NC}"
 if [ ! -f /swapfile ]; then
     sudo fallocate -l $SWAP_SIZE /swapfile
@@ -66,7 +66,6 @@ if ! command -v docker-compose &> /dev/null; then
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
     
-    # Verify installation
     if docker-compose --version; then
         echo "Docker Compose installed successfully."
     else
@@ -100,29 +99,12 @@ fi
 
 cd $APP_DIR
 
-# Create .env file
-echo -e "${GREEN}[6/9] Setting up environment variables...${NC}"
-echo ""
-echo "Please provide your Supabase credentials:"
-echo ""
-read -p "Supabase URL (e.g., https://xxx.supabase.co): " SUPABASE_URL
-read -p "Supabase Anon Key: " SUPABASE_ANON_KEY
-read -s -p "Supabase Service Role Key (hidden): " SUPABASE_SERVICE_ROLE_KEY
-echo ""
-echo ""
-
-# Create .env.local file
-cat > "$APP_DIR/.env.local" <<EOL
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
-
-# Application Configuration
-NEXT_PUBLIC_APP_URL=https://$DOMAIN_NAME
-EOL
-
-echo ".env.local file created successfully."
+# Use existing .env.local
+echo -e "${GREEN}[6/9] Using existing .env.local file...${NC}"
+if [ ! -f "$APP_DIR/.env.local" ]; then
+    echo -e "${RED}.env.local not found in $APP_DIR. Please make sure it exists.${NC}"
+    exit 1
+fi
 
 # Install Nginx
 echo -e "${GREEN}[7/9] Installing and configuring Nginx...${NC}"
@@ -139,12 +121,10 @@ if ! command -v certbot &> /dev/null; then
     sudo apt install certbot -y
 fi
 
-# Check if certificate already exists
 if [ -d "/etc/letsencrypt/live/$DOMAIN_NAME" ]; then
     echo "SSL certificate already exists for $DOMAIN_NAME"
 else
     sudo certbot certonly --standalone -d $DOMAIN_NAME --non-interactive --agree-tos -m $EMAIL
-    
     if [ $? -ne 0 ]; then
         echo -e "${RED}SSL certificate generation failed.${NC}"
         echo "Make sure your domain points to this server's IP address."
@@ -199,14 +179,14 @@ server {
     # Rate limiting
     limit_req zone=cotasklimit burst=20 nodelay;
 
-    # Client max body size (for file uploads)
+    # Client max body size
     client_max_body_size 10M;
 
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         
-        # WebSocket support (for real-time features)
+        # WebSocket support
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
         
@@ -217,8 +197,6 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         
         proxy_cache_bypass \$http_upgrade;
-
-        # Disable buffering for streaming/real-time features
         proxy_buffering off;
         proxy_set_header X-Accel-Buffering no;
 
@@ -235,7 +213,6 @@ server {
     gzip_comp_level 6;
     gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
 
-    # Access and error logs
     access_log /var/log/nginx/cotask_access.log;
     error_log /var/log/nginx/cotask_error.log;
 }
