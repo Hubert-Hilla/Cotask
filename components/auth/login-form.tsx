@@ -39,7 +39,6 @@ export function LoginForm({
       });
       if (error) throw error;
       router.replace("/dashboard");
-      router.
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
