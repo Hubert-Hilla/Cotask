@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 
 export default function CookieNotice() {
-  const [showBanner, setShowBanner] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
 
   useEffect(() => {
     // Check if user has already accepted cookies
@@ -19,7 +19,7 @@ export default function CookieNotice() {
     localStorage.setItem('cookiesAccepted', 'true');
     setShowBanner(false);
   };
-
+  
   if (!showBanner) return null;
 
   return (
