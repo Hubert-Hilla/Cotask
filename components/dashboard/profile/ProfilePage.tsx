@@ -236,7 +236,7 @@ export default function ProfilePage({ user }: ProfilePageProps) {
       }
 
       // Delete user from auth (cascade should handle the rest)
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      const { error } = await supabase.rpc("delete_user" as any);
 
       if (error) throw error;
 
